@@ -22,6 +22,24 @@ const visitorSchema = new mongoose.Schema({
         type: String
     },
 
+    location: {
+        city: {
+            type: String
+        },
+
+        region: {
+            type: String
+        },
+
+        country: {
+            type: String
+        },
+
+        timezone: {
+            type: String
+        }
+    },
+
     timestamp: {
         type: Date,
         default: Date.now

@@ -1,7 +1,7 @@
-console.log("🌐 NetTrace frontend loaded!");
+console.log("🌐 NetTrace loaded successfully!");
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    console.log("✅ NetTrace page is ready!");
+    console.log("🎬 Reel page ready!");
 
 });
