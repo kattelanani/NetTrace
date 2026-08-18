@@ -102,6 +102,8 @@ app.get("/", (req, res) => {
     `);
 });
 
-app.listen(PORT, () => {
-    console.log(`🌐 NetTrace running at http://localhost:${PORT}`);
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🌐 NetTrace running on port ${PORT}`);
 });
