@@ -1,7 +1,9 @@
 const express = require("express");
 
 const app = express();
+
 app.set("trust proxy", true);
+
 const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
@@ -11,7 +13,6 @@ app.get("/", (req, res) => {
     const protocol = req.protocol;
     const host = req.get("Host");
 
-    // Show visitor information in the terminal
     console.log("----- New Visitor -----");
     console.log("IP:", ip);
     console.log("User-Agent:", userAgent);
@@ -20,7 +21,6 @@ app.get("/", (req, res) => {
     console.log("Host:", host);
     console.log("-----------------------");
 
-    // Show visitor information in the browser
     res.send(`
         <!DOCTYPE html>
         <html>
@@ -101,8 +101,6 @@ app.get("/", (req, res) => {
         </html>
     `);
 });
-
-const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🌐 NetTrace running on port ${PORT}`);
