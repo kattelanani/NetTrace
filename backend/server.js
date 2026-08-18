@@ -211,17 +211,21 @@ async function getLocation(ip) {
             );
 
 
+        // ==========================================
+        // IPWHO Location API
+        // ==========================================
+
         const response = await fetch(
-            `https://ipapi.co/${encodeURIComponent(
+            `https://ipwho.is/${encodeURIComponent(
                 cleanIP
-            )}/json/`
+            )}`
         );
 
 
         if (!response.ok) {
 
             console.log(
-                "⚠️ Location API failed:",
+                "⚠️ Location API HTTP error:",
                 response.status
             );
 
@@ -249,6 +253,27 @@ async function getLocation(ip) {
         );
 
 
+        if (data.success === false) {
+
+            console.log(
+                "⚠️ Location API could not identify IP:",
+                data.message
+            );
+
+            return {
+
+                city: "Unknown",
+
+                region: "Unknown",
+
+                country: "Unknown",
+
+                timezone: "Unknown"
+
+            };
+        }
+
+
         return {
 
             city:
@@ -260,11 +285,11 @@ async function getLocation(ip) {
                 "Unknown",
 
             country:
-                data.country_name ||
+                data.country ||
                 "Unknown",
 
             timezone:
-                data.timezone ||
+                data.timezone?.id ||
                 "Unknown"
 
         };
@@ -339,7 +364,9 @@ app.get("/", async (req, res) => {
     // ==========================================
 
     const browser =
-        detectBrowser(userAgent);
+        detectBrowser(
+            userAgent
+        );
 
 
     const operatingSystem =
