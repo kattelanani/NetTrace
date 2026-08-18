@@ -10,6 +10,18 @@ const visitorSchema = new mongoose.Schema({
         type: String
     },
 
+    browser: {
+        type: String
+    },
+
+    operatingSystem: {
+        type: String
+    },
+
+    deviceType: {
+        type: String
+    },
+
     method: {
         type: String
     },
@@ -22,7 +34,12 @@ const visitorSchema = new mongoose.Schema({
         type: String
     },
 
+    referrer: {
+        type: String
+    },
+
     location: {
+
         city: {
             type: String
         },
@@ -38,6 +55,7 @@ const visitorSchema = new mongoose.Schema({
         timezone: {
             type: String
         }
+
     },
 
     timestamp: {
@@ -47,4 +65,7 @@ const visitorSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model("Visitor", visitorSchema);
+module.exports = mongoose.model(
+    "Visitor",
+    visitorSchema
+);

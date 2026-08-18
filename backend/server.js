@@ -28,7 +28,7 @@ mongoose
     });
 
 // ==========================================
-// Frontend Path
+// Frontend
 // ==========================================
 
 const frontendPath = path.join(
@@ -37,14 +37,106 @@ const frontendPath = path.join(
     "frontend"
 );
 
-// IMPORTANT:
-// Do NOT automatically serve index.html.
-// Our "/" route must run first.
 app.use(
     express.static(frontendPath, {
         index: false
     })
 );
+
+// ==========================================
+// Detect Browser
+// ==========================================
+
+function detectBrowser(userAgent) {
+
+    if (!userAgent) {
+        return "Unknown";
+    }
+
+    if (userAgent.includes("Edg/")) {
+        return "Microsoft Edge";
+    }
+
+    if (userAgent.includes("OPR/")) {
+        return "Opera";
+    }
+
+    if (userAgent.includes("Chrome/")) {
+        return "Chrome";
+    }
+
+    if (userAgent.includes("Firefox/")) {
+        return "Firefox";
+    }
+
+    if (userAgent.includes("Safari/")) {
+        return "Safari";
+    }
+
+    return "Unknown";
+}
+
+// ==========================================
+// Detect Operating System
+// ==========================================
+
+function detectOperatingSystem(userAgent) {
+
+    if (!userAgent) {
+        return "Unknown";
+    }
+
+    if (userAgent.includes("Windows NT")) {
+        return "Windows";
+    }
+
+    if (userAgent.includes("Android")) {
+        return "Android";
+    }
+
+    if (
+        userAgent.includes("iPhone") ||
+        userAgent.includes("iPad") ||
+        userAgent.includes("iPod")
+    ) {
+        return "iOS";
+    }
+
+    if (userAgent.includes("Mac OS X")) {
+        return "macOS";
+    }
+
+    if (userAgent.includes("Linux")) {
+        return "Linux";
+    }
+
+    return "Unknown";
+}
+
+// ==========================================
+// Detect Device Type
+// ==========================================
+
+function detectDeviceType(userAgent) {
+
+    if (!userAgent) {
+        return "Unknown";
+    }
+
+    if (/iPad|Tablet/i.test(userAgent)) {
+        return "Tablet";
+    }
+
+    if (
+        /Mobile|Android|iPhone|iPod/i.test(
+            userAgent
+        )
+    ) {
+        return "Mobile";
+    }
+
+    return "Desktop";
+}
 
 // ==========================================
 // Get Approximate IP Location
@@ -54,7 +146,6 @@ async function getLocation(ip) {
 
     try {
 
-        // Localhost doesn't have a public geographic location
         if (
             ip === "::1" ||
             ip === "127.0.0.1" ||
@@ -69,14 +160,15 @@ async function getLocation(ip) {
             };
         }
 
-        // Remove IPv4-mapped IPv6 prefix
         const cleanIP = ip.replace(
             "::ffff:",
             ""
         );
 
         const response = await fetch(
-            `https://ipapi.co/${encodeURIComponent(cleanIP)}/json/`
+            `https://ipapi.co/${encodeURIComponent(
+                cleanIP
+            )}/json/`
         );
 
         if (!response.ok) {
@@ -97,10 +189,23 @@ async function getLocation(ip) {
         const data = await response.json();
 
         return {
-            city: data.city || "Unknown",
-            region: data.region || "Unknown",
-            country: data.country_name || "Unknown",
-            timezone: data.timezone || "Unknown"
+
+            city:
+                data.city ||
+                "Unknown",
+
+            region:
+                data.region ||
+                "Unknown",
+
+            country:
+                data.country_name ||
+                "Unknown",
+
+            timezone:
+                data.timezone ||
+                "Unknown"
+
         };
 
     } catch (error) {
@@ -131,7 +236,8 @@ app.get("/", async (req, res) => {
     const ip = req.ip;
 
     const userAgent =
-        req.get("User-Agent");
+        req.get("User-Agent") ||
+        "Unknown";
 
     const method =
         req.method;
@@ -142,9 +248,45 @@ app.get("/", async (req, res) => {
     const host =
         req.get("Host");
 
+    // ==========================================
+    // Referrer
+    // ==========================================
+
+    const referrer =
+        req.get("Referer") ||
+        "Direct";
+
+    // ==========================================
+    // Detect Browser / OS / Device
+    // ==========================================
+
+    const browser =
+        detectBrowser(userAgent);
+
+    const operatingSystem =
+        detectOperatingSystem(userAgent);
+
+    const deviceType =
+        detectDeviceType(userAgent);
+
     console.log("----- New Visitor -----");
 
     console.log("IP:", ip);
+
+    console.log(
+        "Browser:",
+        browser
+    );
+
+    console.log(
+        "Operating System:",
+        operatingSystem
+    );
+
+    console.log(
+        "Device Type:",
+        deviceType
+    );
 
     console.log(
         "User-Agent:",
@@ -166,6 +308,11 @@ app.get("/", async (req, res) => {
         host
     );
 
+    console.log(
+        "Referrer:",
+        referrer
+    );
+
     // ==========================================
     // Location
     // ==========================================
@@ -183,7 +330,7 @@ app.get("/", async (req, res) => {
     );
 
     // ==========================================
-    // Save Visitor to MongoDB
+    // Save Visitor
     // ==========================================
 
     try {
@@ -195,11 +342,20 @@ app.get("/", async (req, res) => {
 
                 userAgent: userAgent,
 
+                browser: browser,
+
+                operatingSystem:
+                    operatingSystem,
+
+                deviceType: deviceType,
+
                 method: method,
 
                 protocol: protocol,
 
                 host: host,
+
+                referrer: referrer,
 
                 location: location
 
