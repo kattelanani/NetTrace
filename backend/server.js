@@ -11,6 +11,7 @@ app.set("trust proxy", true);
 
 const PORT = process.env.PORT || 5000;
 
+
 // ==========================================
 // MongoDB Connection
 // ==========================================
@@ -27,6 +28,7 @@ mongoose
         );
     });
 
+
 // ==========================================
 // Frontend
 // ==========================================
@@ -42,6 +44,7 @@ app.use(
         index: false
     })
 );
+
 
 // ==========================================
 // Detect Browser
@@ -69,12 +72,16 @@ function detectBrowser(userAgent) {
         return "Firefox";
     }
 
-    if (userAgent.includes("Safari/")) {
+    if (
+        userAgent.includes("Safari/") &&
+        !userAgent.includes("Chrome/")
+    ) {
         return "Safari";
     }
 
     return "Unknown";
 }
+
 
 // ==========================================
 // Detect Operating System
@@ -113,6 +120,7 @@ function detectOperatingSystem(userAgent) {
     return "Unknown";
 }
 
+
 // ==========================================
 // Detect Device Type
 // ==========================================
@@ -138,14 +146,42 @@ function detectDeviceType(userAgent) {
     return "Desktop";
 }
 
+
 // ==========================================
-// Get Approximate IP Location
+// Get Visitor IP
+// ==========================================
+
+function getVisitorIP(req) {
+
+    const forwardedFor =
+        req.headers["x-forwarded-for"];
+
+    if (forwardedFor) {
+
+        return forwardedFor
+            .split(",")[0]
+            .trim();
+
+    }
+
+    return req.ip;
+}
+
+
+// ==========================================
+// Get Approximate Location
 // ==========================================
 
 async function getLocation(ip) {
 
     try {
 
+        console.log(
+            "🌍 Looking up location for IP:",
+            ip
+        );
+
+        // Local development
         if (
             ip === "::1" ||
             ip === "127.0.0.1" ||
@@ -153,17 +189,27 @@ async function getLocation(ip) {
         ) {
 
             return {
+
                 city: "Localhost",
+
                 region: "Local",
+
                 country: "Local",
+
                 timezone: "Local"
+
             };
         }
 
-        const cleanIP = ip.replace(
-            "::ffff:",
-            ""
-        );
+
+        // Remove IPv4-mapped IPv6 prefix
+
+        const cleanIP =
+            ip.replace(
+                "::ffff:",
+                ""
+            );
+
 
         const response = await fetch(
             `https://ipapi.co/${encodeURIComponent(
@@ -171,22 +217,37 @@ async function getLocation(ip) {
             )}/json/`
         );
 
+
         if (!response.ok) {
 
             console.log(
-                "⚠️ Location API request failed:",
+                "⚠️ Location API failed:",
                 response.status
             );
 
             return {
+
                 city: "Unknown",
+
                 region: "Unknown",
+
                 country: "Unknown",
+
                 timezone: "Unknown"
+
             };
         }
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "🌍 Location API response:",
+            data
+        );
+
 
         return {
 
@@ -216,13 +277,19 @@ async function getLocation(ip) {
         );
 
         return {
+
             city: "Unknown",
+
             region: "Unknown",
+
             country: "Unknown",
+
             timezone: "Unknown"
+
         };
     }
 }
+
 
 // ==========================================
 // HOME ROUTE
@@ -231,30 +298,41 @@ async function getLocation(ip) {
 app.get("/", async (req, res) => {
 
     console.log("");
-    console.log("🔥 HOME ROUTE HIT!");
 
-    const ip = req.ip;
+    console.log(
+        "🔥 HOME ROUTE HIT!"
+    );
+
+
+    // ==========================================
+    // Visitor Information
+    // ==========================================
+
+    const ip =
+        getVisitorIP(req);
+
 
     const userAgent =
         req.get("User-Agent") ||
         "Unknown";
 
+
     const method =
         req.method;
+
 
     const protocol =
         req.protocol;
 
+
     const host =
         req.get("Host");
 
-    // ==========================================
-    // Referrer
-    // ==========================================
 
     const referrer =
         req.get("Referer") ||
         "Direct";
+
 
     // ==========================================
     // Detect Browser / OS / Device
@@ -263,55 +341,81 @@ app.get("/", async (req, res) => {
     const browser =
         detectBrowser(userAgent);
 
+
     const operatingSystem =
-        detectOperatingSystem(userAgent);
+        detectOperatingSystem(
+            userAgent
+        );
+
 
     const deviceType =
-        detectDeviceType(userAgent);
+        detectDeviceType(
+            userAgent
+        );
 
-    console.log("----- New Visitor -----");
 
-    console.log("IP:", ip);
+    // ==========================================
+    // Console Information
+    // ==========================================
+
+    console.log(
+        "----- New Visitor -----"
+    );
+
+
+    console.log(
+        "IP:",
+        ip
+    );
+
 
     console.log(
         "Browser:",
         browser
     );
 
+
     console.log(
         "Operating System:",
         operatingSystem
     );
+
 
     console.log(
         "Device Type:",
         deviceType
     );
 
+
     console.log(
         "User-Agent:",
         userAgent
     );
+
 
     console.log(
         "Method:",
         method
     );
 
+
     console.log(
         "Protocol:",
         protocol
     );
+
 
     console.log(
         "Host:",
         host
     );
 
+
     console.log(
         "Referrer:",
         referrer
     );
+
 
     // ==========================================
     // Location
@@ -320,17 +424,20 @@ app.get("/", async (req, res) => {
     const location =
         await getLocation(ip);
 
+
     console.log(
         "Approximate Location:",
         location
     );
 
+
     console.log(
         "-----------------------"
     );
 
+
     // ==========================================
-    // Save Visitor
+    // Save Visitor to MongoDB
     // ==========================================
 
     try {
@@ -338,32 +445,43 @@ app.get("/", async (req, res) => {
         const visitor =
             await Visitor.create({
 
-                ipAddress: ip,
+                ipAddress:
+                    ip,
 
-                userAgent: userAgent,
+                userAgent:
+                    userAgent,
 
-                browser: browser,
+                browser:
+                    browser,
 
                 operatingSystem:
                     operatingSystem,
 
-                deviceType: deviceType,
+                deviceType:
+                    deviceType,
 
-                method: method,
+                method:
+                    method,
 
-                protocol: protocol,
+                protocol:
+                    protocol,
 
-                host: host,
+                host:
+                    host,
 
-                referrer: referrer,
+                referrer:
+                    referrer,
 
-                location: location
+                location:
+                    location
 
             });
+
 
         console.log(
             "💾 Visitor saved to MongoDB!"
         );
+
 
         console.log(
             "Visitor ID:",
@@ -376,12 +494,15 @@ app.get("/", async (req, res) => {
             "❌ Failed to save visitor:"
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
     }
 
+
     // ==========================================
-    // Send Reel Page
+    // Send Instagram Reel Page
     // ==========================================
 
     res.sendFile(
@@ -392,6 +513,7 @@ app.get("/", async (req, res) => {
     );
 
 });
+
 
 // ==========================================
 // Start Server
