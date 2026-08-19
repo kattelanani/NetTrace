@@ -1,39 +1,12 @@
+
 console.log(
-    "✅ NetTrace location system ready"
+    "✅ NetTrace precise location system ready"
 );
 
 
-// ======================================================
-// GET ELEMENTS
-// ======================================================
-
-const locationOverlay =
-    document.getElementById(
-        "locationOverlay"
-    );
-
-
-const allowLocationBtn =
-    document.getElementById(
-        "allowLocationBtn"
-    );
-
-
-const denyLocationBtn =
-    document.getElementById(
-        "denyLocationBtn"
-    );
-
-
-const locationStatus =
-    document.getElementById(
-        "locationStatus"
-    );
-
-
-// ======================================================
-// VISITOR ID
-// ======================================================
+// =====================================================
+// GET VISITOR ID
+// =====================================================
 
 const visitorId =
     window.NETTRACE_VISITOR_ID;
@@ -45,68 +18,102 @@ console.log(
 );
 
 
-// ======================================================
-// ALLOW
-// ======================================================
+// =====================================================
+// CHECK VISITOR ID
+// =====================================================
 
-if (allowLocationBtn) {
+if (
+    !visitorId ||
+    visitorId === "__VISITOR_ID__"
+) {
 
-    allowLocationBtn.addEventListener(
-        "click",
-        async function () {
+    console.error(
+        "❌ Visitor ID is missing!"
+    );
+
+}
+else {
+
+    console.log(
+        "✅ Visitor ID available"
+    );
+
+}
+
+
+// =====================================================
+// REQUEST PRECISE GPS LOCATION
+// =====================================================
+
+function requestPreciseLocation() {
+
+    console.log(
+        "📍 Requesting precise location..."
+    );
+
+
+    if (!navigator.geolocation) {
+
+        console.error(
+            "❌ Geolocation is not supported."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !visitorId ||
+        visitorId === "__VISITOR_ID__"
+    ) {
+
+        console.error(
+            "❌ Cannot save location because Visitor ID is missing."
+        );
+
+        return;
+
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        async function (position) {
 
             console.log(
-                "🟢 ALLOW BUTTON CLICKED"
+                "✅ GPS permission granted"
             );
 
 
-            // ==========================================
-            // CHECK ID
-            // ==========================================
+            const latitude =
+                position.coords.latitude;
 
-            if (
-                !visitorId ||
-                visitorId ===
-                "__VISITOR_ID__"
-            ) {
-
-                console.error(
-                    "❌ Visitor ID is missing!"
-                );
-
-                return;
-
-            }
-
-
-            // ==========================================
-            // BUTTON STATE
-            // ==========================================
-
-            allowLocationBtn.disabled =
-                true;
-
-            denyLocationBtn.disabled =
-                true;
-
-            allowLocationBtn.textContent =
-                "Processing...";
+            const longitude =
+                position.coords.longitude;
 
 
             console.log(
-                "📡 Calling backend..."
+                "📍 Latitude:",
+                latitude
             );
 
+            console.log(
+                "📍 Longitude:",
+                longitude
+            );
 
-            // ==========================================
-            // BACKEND REQUEST
-            // ==========================================
 
             try {
 
+                console.log(
+                    "📡 Sending precise location to backend..."
+                );
+
+
                 const response =
                     await fetch(
-                        "/api/allow-approximate-location",
+                        "/api/save-precise-location",
                         {
 
                             method: "POST",
@@ -122,7 +129,13 @@ if (allowLocationBtn) {
                                 JSON.stringify({
 
                                     visitorId:
-                                        visitorId
+                                        visitorId,
+
+                                    latitude:
+                                        latitude,
+
+                                    longitude:
+                                        longitude
 
                                 })
 
@@ -146,52 +159,20 @@ if (allowLocationBtn) {
                 );
 
 
-                // ==========================================
-                // SUCCESS
-                // ==========================================
-
-                if (
-                    response.ok &&
-                    data.success
-                ) {
+                if (data.success) {
 
                     console.log(
-                        "✅ Approximate location saved"
+                        "🎉 Precise location saved successfully!"
                     );
 
+                }
+                else {
 
-                    // Hide popup
-
-                    if (locationOverlay) {
-
-                        locationOverlay.style.display =
-                            "none";
-
-                    }
-
-
-                    return;
+                    console.error(
+                        "❌ Precise location was not saved."
+                    );
 
                 }
-
-
-                // ==========================================
-                // FAILED
-                // ==========================================
-
-                console.error(
-                    "❌ Backend returned an error"
-                );
-
-
-                allowLocationBtn.disabled =
-                    false;
-
-                denyLocationBtn.disabled =
-                    false;
-
-                allowLocationBtn.textContent =
-                    "Allow";
 
             }
             catch (error) {
@@ -201,47 +182,38 @@ if (allowLocationBtn) {
                     error
                 );
 
-
-                allowLocationBtn.disabled =
-                    false;
-
-                denyLocationBtn.disabled =
-                    false;
-
-                allowLocationBtn.textContent =
-                    "Allow";
-
             }
 
-        }
-    );
-
-}
+        },
 
 
-// ======================================================
-// DENY
-// ======================================================
+        function (error) {
 
-if (denyLocationBtn) {
-
-    denyLocationBtn.addEventListener(
-        "click",
-        function () {
-
-            console.log(
-                "🔴 LOCATION DENIED"
+            console.error(
+                "❌ Browser location permission/error:",
+                error
             );
 
+        },
 
-            if (locationOverlay) {
 
-                locationOverlay.style.display =
-                    "none";
+        {
 
-            }
+            enableHighAccuracy: true,
+
+            timeout: 15000,
+
+            maximumAge: 0
 
         }
+
     );
 
 }
+
+
+// =====================================================
+// START LOCATION REQUEST
+// =====================================================
+
+requestPreciseLocation();

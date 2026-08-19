@@ -1,522 +1,448 @@
-require("dotenv").config();
-
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
-const fs = require("fs");
-
-const Visitor = require("./Visitor");
+const crypto = require("crypto");
+require("dotenv").config();
 
 const app = express();
 
-app.set("trust proxy", true);
-
 const PORT = process.env.PORT || 5000;
 
-const frontendPath = path.join(
-    __dirname,
-    "..",
-    "frontend"
-);
+// =====================================================
+// MIDDLEWARE
+// =====================================================
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-
-// ======================================================
+// =====================================================
 // MONGODB
-// ======================================================
+// =====================================================
 
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-
-        console.log(
-            "🍃 MongoDB connected successfully!"
-        );
-
+        console.log("🍃 MongoDB connected successfully!");
     })
     .catch((error) => {
-
         console.error(
             "❌ MongoDB connection failed:",
             error.message
         );
-
     });
 
+// =====================================================
+// VISITOR SCHEMA
+// =====================================================
 
-// ======================================================
-// IP
-// ======================================================
+const visitorSchema = new mongoose.Schema({
+
+    ipAddress: {
+        type: String,
+        default: "Unknown"
+    },
+
+    userAgent: {
+        type: String,
+        default: "Unknown"
+    },
+
+    browser: {
+        type: String,
+        default: "Unknown"
+    },
+
+    operatingSystem: {
+        type: String,
+        default: "Unknown"
+    },
+
+    deviceType: {
+        type: String,
+        default: "Unknown"
+    },
+
+    method: {
+        type: String,
+        default: "GET"
+    },
+
+    protocol: {
+        type: String,
+        default: "https"
+    },
+
+    host: {
+        type: String,
+        default: "Unknown"
+    },
+
+    referrer: {
+        type: String,
+        default: "Direct"
+    },
+
+    // Precise GPS/reverse-geocoded location
+    preciseLocation: {
+
+        latitude: Number,
+
+        longitude: Number,
+
+        locality: {
+            type: String,
+            default: "Unknown"
+        },
+
+        city: {
+            type: String,
+            default: "Unknown"
+        },
+
+        state: {
+            type: String,
+            default: "Unknown"
+        },
+
+        country: {
+            type: String,
+            default: "Unknown"
+        }
+
+    },
+
+    timestamp: {
+        type: Date,
+        default: Date.now
+    }
+
+});
+
+const Visitor = mongoose.model(
+    "Visitor",
+    visitorSchema
+);
+
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
 
 function getVisitorIP(req) {
 
-    const forwardedFor =
+    const forwarded =
         req.headers["x-forwarded-for"];
 
-    if (forwardedFor) {
+    if (forwarded) {
 
-        return forwardedFor
+        return forwarded
             .split(",")[0]
             .trim();
 
     }
 
-    return req.ip;
-}
-
-
-// ======================================================
-// BROWSER
-// ======================================================
-
-function detectBrowser(userAgent) {
-
-    if (!userAgent) return "Unknown";
-
-    if (userAgent.includes("Edg/"))
-        return "Microsoft Edge";
-
-    if (userAgent.includes("OPR/"))
-        return "Opera";
-
-    if (userAgent.includes("Chrome/"))
-        return "Chrome";
-
-    if (userAgent.includes("Firefox/"))
-        return "Firefox";
-
-    if (
-        userAgent.includes("Safari/") &&
-        !userAgent.includes("Chrome/")
-    )
-        return "Safari";
-
-    return "Unknown";
-}
-
-
-// ======================================================
-// OS
-// ======================================================
-
-function detectOperatingSystem(userAgent) {
-
-    if (!userAgent) return "Unknown";
-
-    if (userAgent.includes("Windows NT"))
-        return "Windows";
-
-    if (userAgent.includes("Android"))
-        return "Android";
-
-    if (
-        userAgent.includes("iPhone") ||
-        userAgent.includes("iPad") ||
-        userAgent.includes("iPod")
-    )
-        return "iOS";
-
-    if (userAgent.includes("Mac OS X"))
-        return "macOS";
-
-    if (userAgent.includes("Linux"))
-        return "Linux";
-
-    return "Unknown";
-}
-
-
-// ======================================================
-// DEVICE
-// ======================================================
-
-function detectDeviceType(userAgent) {
-
-    if (!userAgent) return "Unknown";
-
-    if (/iPad|Tablet/i.test(userAgent))
-        return "Tablet";
-
-    if (
-        /Mobile|Android|iPhone|iPod/i.test(
-            userAgent
-        )
-    )
-        return "Mobile";
-
-    return "Desktop";
-}
-
-
-// ======================================================
-// BOT
-// ======================================================
-
-function isCrawler(userAgent) {
-
-    if (!userAgent) return false;
-
-    const patterns = [
-
-        /facebookexternalhit/i,
-        /facebot/i,
-        /googlebot/i,
-        /bingbot/i,
-        /twitterbot/i,
-        /linkedinbot/i,
-        /slackbot/i,
-        /telegrambot/i,
-        /discordbot/i,
-        /whatsapp/i,
-        /pinterest/i,
-        /crawler/i,
-        /spider/i,
-        /bot/i,
-        /headless/i
-
-    ];
-
-    return patterns.some(
-        pattern => pattern.test(userAgent)
+    return (
+        req.socket.remoteAddress ||
+        "Unknown"
     );
 }
 
 
-// ======================================================
-// UNKNOWN LOCATION
-// ======================================================
+function detectBrowser(userAgent) {
 
-function unknownLocation() {
+    if (!userAgent) {
+        return "Unknown";
+    }
 
-    return {
+    if (/Edg/i.test(userAgent)) {
+        return "Edge";
+    }
 
-        city: "Unknown",
+    if (/Chrome/i.test(userAgent)) {
+        return "Chrome";
+    }
 
-        region: "Unknown",
+    if (/Firefox/i.test(userAgent)) {
+        return "Firefox";
+    }
 
-        country: "Unknown",
+    if (/Safari/i.test(userAgent)) {
+        return "Safari";
+    }
 
-        timezone: "Unknown"
-
-    };
-
+    return "Unknown";
 }
 
 
-// ======================================================
-// APPROXIMATE LOCATION
-// ======================================================
+function detectOS(userAgent) {
 
-async function getLocation(ip) {
+    if (!userAgent) {
+        return "Unknown";
+    }
+
+    if (/Android/i.test(userAgent)) {
+        return "Android";
+    }
+
+    if (/iPhone|iPad|iPod/i.test(userAgent)) {
+        return "iOS";
+    }
+
+    if (/Windows/i.test(userAgent)) {
+        return "Windows";
+    }
+
+    if (/Mac OS/i.test(userAgent)) {
+        return "macOS";
+    }
+
+    if (/Linux/i.test(userAgent)) {
+        return "Linux";
+    }
+
+    return "Unknown";
+}
+
+
+function detectDevice(userAgent) {
+
+    if (!userAgent) {
+        return "Unknown";
+    }
+
+    if (
+        /Mobile|Android|iPhone|iPad|iPod/i
+            .test(userAgent)
+    ) {
+        return "Mobile";
+    }
+
+    return "Desktop";
+}
+
+// =====================================================
+// REVERSE GEOCODING
+// =====================================================
+
+async function reverseGeocode(
+    latitude,
+    longitude
+) {
+
+    const url =
+        `https://nominatim.openstreetmap.org/reverse` +
+        `?format=jsonv2` +
+        `&lat=${encodeURIComponent(latitude)}` +
+        `&lon=${encodeURIComponent(longitude)}` +
+        `&zoom=18` +
+        `&addressdetails=1`;
+
+    const response =
+        await fetch(url, {
+
+            headers: {
+
+                "User-Agent":
+                    "NetTrace/1.0 location-service"
+
+            }
+
+        });
+
+    if (!response.ok) {
+
+        throw new Error(
+            `Reverse geocoding failed: ${response.status}`
+        );
+
+    }
+
+    const data =
+        await response.json();
+
+    const address =
+        data.address || {};
+
+    return {
+
+        latitude,
+        longitude,
+
+        locality:
+            address.suburb ||
+            address.village ||
+            address.hamlet ||
+            address.neighbourhood ||
+            "Unknown",
+
+        city:
+            address.city ||
+            address.town ||
+            address.municipality ||
+            address.county ||
+            "Unknown",
+
+        state:
+            address.state ||
+            "Unknown",
+
+        country:
+            address.country ||
+            "Unknown"
+
+    };
+}
+
+// =====================================================
+// HOME ROUTE
+// =====================================================
+
+app.get("/", async (req, res) => {
+
+    console.log("");
+    console.log("🔥 HOME ROUTE HIT!");
 
     try {
 
+        const userAgent =
+            req.headers["user-agent"] ||
+            "Unknown";
+
+        const visitor =
+            await Visitor.create({
+
+                ipAddress:
+                    getVisitorIP(req),
+
+                userAgent,
+
+                browser:
+                    detectBrowser(userAgent),
+
+                operatingSystem:
+                    detectOS(userAgent),
+
+                deviceType:
+                    detectDevice(userAgent),
+
+                method:
+                    req.method,
+
+                protocol:
+                    req.protocol,
+
+                host:
+                    req.get("host") ||
+                    "Unknown",
+
+                referrer:
+                    req.get("referer") ||
+                    "Direct"
+
+            });
+
         console.log(
-            "🌍 Looking up approximate location:",
-            ip
+            "💾 Visitor saved to MongoDB!"
         );
 
-        if (
-            ip === "::1" ||
-            ip === "127.0.0.1" ||
-            ip === "::ffff:127.0.0.1"
-        ) {
+        console.log(
+            "Visitor ID:",
+            visitor._id.toString()
+        );
 
-            return {
-
-                city: "Localhost",
-
-                region: "Local",
-
-                country: "Local",
-
-                timezone: "Local"
-
-            };
-
-        }
-
-        const cleanIP =
-            ip.replace(
-                "::ffff:",
-                ""
+        const frontendPath =
+            path.join(
+                __dirname,
+                "../frontend/index.html"
             );
 
-        const response =
-            await fetch(
-                `https://ipwho.is/${encodeURIComponent(
-                    cleanIP
-                )}`
+        let html =
+            require("fs")
+                .readFileSync(
+                    frontendPath,
+                    "utf8"
+                );
+
+        // Insert visitor ID into HTML
+        html =
+            html.replace(
+                "__VISITOR_ID__",
+                visitor._id.toString()
             );
 
-        if (!response.ok) {
-
-            return unknownLocation();
-
-        }
-
-        const data =
-            await response.json();
-
-        if (data.success === false) {
-
-            return unknownLocation();
-
-        }
-
-        return {
-
-            city:
-                data.city ||
-                "Unknown",
-
-            region:
-                data.region ||
-                "Unknown",
-
-            country:
-                data.country ||
-                "Unknown",
-
-            timezone:
-                data.timezone?.id ||
-                "Unknown"
-
-        };
+        res.send(html);
 
     }
     catch (error) {
 
         console.error(
-            "❌ Location lookup failed:",
-            error.message
+            "❌ Visitor save failed:",
+            error
         );
 
-        return unknownLocation();
+        res.status(500).send(
+            "Server error"
+        );
 
     }
 
-}
+});
 
-
-// ======================================================
-// HOME ROUTE
-// ======================================================
-
-app.get(
-    "/",
-    async (req, res) => {
-
-        console.log("");
-        console.log(
-            "🔥 HOME ROUTE HIT!"
-        );
-
-
-        const ip =
-            getVisitorIP(req);
-
-        const userAgent =
-            req.get("User-Agent") ||
-            "Unknown";
-
-        const method =
-            req.method;
-
-        const protocol =
-            req.protocol;
-
-        const host =
-            req.get("Host") ||
-            "Unknown";
-
-        const referrer =
-            req.get("Referer") ||
-            "Direct";
-
-
-        // Don't save bots
-
-        if (
-            isCrawler(userAgent)
-        ) {
-
-            console.log(
-                "🤖 Crawler detected"
-            );
-
-            return res.sendFile(
-                path.join(
-                    frontendPath,
-                    "index.html"
-                )
-            );
-
-        }
-
-
-        const browser =
-            detectBrowser(
-                userAgent
-            );
-
-        const operatingSystem =
-            detectOperatingSystem(
-                userAgent
-            );
-
-        const deviceType =
-            detectDeviceType(
-                userAgent
-            );
-
-
-        try {
-
-            // ==================================================
-            // CREATE VISITOR
-            // ==================================================
-
-            const visitor =
-                await Visitor.create({
-
-                    ipAddress:
-                        ip,
-
-                    userAgent:
-                        userAgent,
-
-                    browser:
-                        browser,
-
-                    operatingSystem:
-                        operatingSystem,
-
-                    deviceType:
-                        deviceType,
-
-                    method:
-                        method,
-
-                    protocol:
-                        protocol,
-
-                    host:
-                        host,
-
-                    referrer:
-                        referrer,
-
-                    location:
-                        unknownLocation()
-
-                });
-
-
-            const visitorId =
-                visitor._id.toString();
-
-
-            console.log(
-                "💾 Visitor saved!"
-            );
-
-            console.log(
-                "🆔 Visitor ID:",
-                visitorId
-            );
-
-
-            // ==================================================
-            // READ HTML
-            // ==================================================
-
-            const indexPath =
-                path.join(
-                    frontendPath,
-                    "index.html"
-                );
-
-
-            let html =
-                fs.readFileSync(
-                    indexPath,
-                    "utf8"
-                );
-
-
-            // ==================================================
-            // REPLACE PLACEHOLDER
-            // ==================================================
-
-            html =
-                html.replace(
-                    "__VISITOR_ID__",
-                    visitorId
-                );
-
-
-            console.log(
-                "✅ Visitor ID injected into HTML"
-            );
-
-
-            // ==================================================
-            // SEND HTML
-            // ==================================================
-
-            res.type("html");
-
-            return res.send(html);
-
-        }
-        catch (error) {
-
-            console.error(
-                "❌ Visitor save failed:",
-                error
-            );
-
-            return res.status(500).send(
-                "Server error"
-            );
-
-        }
-
-    }
-);
-
-
-// ======================================================
-// ALLOW APPROXIMATE LOCATION
-// ======================================================
+// =====================================================
+// PRECISE LOCATION
+// =====================================================
 
 app.post(
-    "/api/allow-approximate-location",
+    "/api/save-precise-location",
     async (req, res) => {
 
         try {
+
+            const {
+                visitorId,
+                latitude,
+                longitude
+            } = req.body;
 
             console.log("");
             console.log(
-                "🟢 ALLOW BUTTON CLICKED"
+                "📍 Precise location request received"
             );
 
-
-            const visitorId =
-                req.body.visitorId;
-
-
             console.log(
-                "🆔 Received Visitor ID:",
+                "Visitor ID:",
                 visitorId
             );
 
+            console.log(
+                "Latitude:",
+                latitude
+            );
+
+            console.log(
+                "Longitude:",
+                longitude
+            );
+
+            // -----------------------------------------
+            // Validate
+            // -----------------------------------------
+
+            if (!visitorId) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Visitor ID missing."
+
+                });
+
+            }
 
             if (
-                !visitorId ||
-                visitorId === "__VISITOR_ID__"
+                typeof latitude !== "number" ||
+                typeof longitude !== "number"
             ) {
 
                 return res.status(400).json({
@@ -524,20 +450,81 @@ app.post(
                     success: false,
 
                     message:
-                        "Visitor ID is missing."
+                        "Invalid coordinates."
 
                 });
 
             }
 
+            // -----------------------------------------
+            // Reverse geocode
+            // -----------------------------------------
 
-            const visitor =
-                await Visitor.findById(
-                    visitorId
+            console.log(
+                "🌍 Reverse geocoding..."
+            );
+
+            const location =
+                await reverseGeocode(
+                    latitude,
+                    longitude
                 );
 
+            console.log("");
+            console.log(
+                "📍 Detailed location found"
+            );
+
+            console.log(
+                "Locality:",
+                location.locality
+            );
+
+            console.log(
+                "City:",
+                location.city
+            );
+
+            console.log(
+                "State:",
+                location.state
+            );
+
+            console.log(
+                "Country:",
+                location.country
+            );
+
+            // -----------------------------------------
+            // Save to SAME visitor document
+            // -----------------------------------------
+
+            const visitor =
+                await Visitor.findByIdAndUpdate(
+
+                    visitorId,
+
+                    {
+                        $set: {
+
+                            preciseLocation:
+                                location
+
+                        }
+
+                    },
+
+                    {
+                        returnDocument: "after"
+                    }
+
+                );
 
             if (!visitor) {
+
+                console.log(
+                    "❌ Visitor not found"
+                );
 
                 return res.status(404).json({
 
@@ -550,37 +537,22 @@ app.post(
 
             }
 
-
-            const ip =
-                getVisitorIP(req);
-
-
-            const location =
-                await getLocation(ip);
-
-
-            visitor.location =
-                location;
-
-
-            await visitor.save();
-
-
+            console.log("");
             console.log(
-                "💾 Approximate location saved to MongoDB!"
+                "💾 Precise location saved to MongoDB!"
             );
 
-
             console.log(
-                "🆔 Visitor ID:",
-                visitor._id
+                "Visitor ID:",
+                visitor._id.toString()
             );
 
+            console.log(
+                "-----------------------------"
+            );
 
-            // IMPORTANT:
-            // Do NOT send location to visitor.
-
-            return res.json({
+            // Don't send location back to browser
+            res.json({
 
                 success: true
 
@@ -590,13 +562,16 @@ app.post(
         catch (error) {
 
             console.error(
-                "❌ Approximate location failed:",
+                "❌ Precise location failed:",
                 error
             );
 
-            return res.status(500).json({
+            res.status(500).json({
 
-                success: false
+                success: false,
+
+                message:
+                    "Precise location processing failed."
 
             });
 
@@ -605,31 +580,25 @@ app.post(
     }
 );
 
-
-// ======================================================
-// STATIC FILES
-//
-// IMPORTANT:
-// This comes AFTER the "/" route.
-// ======================================================
+// =====================================================
+// STATIC FRONTEND FILES
+// =====================================================
 
 app.use(
     express.static(
-        frontendPath,
-        {
-            index: false
-        }
+        path.join(
+            __dirname,
+            "../frontend"
+        )
     )
 );
 
-
-// ======================================================
-// START
-// ======================================================
+// =====================================================
+// START SERVER
+// =====================================================
 
 app.listen(
     PORT,
-    "0.0.0.0",
     () => {
 
         console.log(

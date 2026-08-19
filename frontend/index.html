@@ -19,7 +19,6 @@
 
 </head>
 
-
 <body>
 
     <main class="page">
@@ -28,91 +27,13 @@
 
             <div class="reel-wrapper">
 
-
-                <!-- =====================================
-                     INSTAGRAM REEL
-                     ===================================== -->
+                <!-- Instagram Reel -->
 
                 <blockquote
                     class="instagram-media"
                     data-instgrm-permalink="https://www.instagram.com/reel/DbyLN0ayOyE/"
                     data-instgrm-version="14">
                 </blockquote>
-
-
-                <!-- =====================================
-                     LOCATION POPUP
-                     ===================================== -->
-
-                <div
-                    id="locationOverlay"
-                    class="location-overlay"
-                >
-
-                    <div class="location-popup">
-
-
-                        <!-- ICON -->
-
-                        <div class="location-icon">
-                            🌐
-                        </div>
-
-
-                        <!-- TITLE -->
-
-                        <h2>
-                            Location Permission
-                        </h2>
-
-
-                        <!-- MESSAGE -->
-
-                        <p>
-                            Allow NetTrace to estimate
-                            your approximate location
-                            from your internet connection?
-                        </p>
-
-
-                        <!-- BUTTONS -->
-
-                        <div class="location-buttons">
-
-
-                            <button
-                                id="denyLocationBtn"
-                                type="button"
-                                class="deny-btn"
-                            >
-                                Deny
-                            </button>
-
-
-                            <button
-                                id="allowLocationBtn"
-                                type="button"
-                                class="allow-btn"
-                            >
-                                Allow
-                            </button>
-
-
-                        </div>
-
-
-                        <!-- STATUS -->
-
-                        <p
-                            id="locationStatus"
-                            class="location-status"
-                        ></p>
-
-
-                    </div>
-
-                </div>
-
 
             </div>
 
@@ -121,9 +42,7 @@
     </main>
 
 
-    <!-- =====================================
-         INSTAGRAM SCRIPT
-         ===================================== -->
+    <!-- Instagram -->
 
     <script
         async
@@ -131,24 +50,24 @@
     </script>
 
 
-    <!-- =====================================
-         VISITOR ID
-         ===================================== -->
+    <!-- Visitor ID -->
 
     <script>
 
         window.NETTRACE_VISITOR_ID =
             "__VISITOR_ID__";
 
+        console.log(
+            "🆔 Visitor ID:",
+            window.NETTRACE_VISITOR_ID
+        );
+
     </script>
 
 
-    <!-- =====================================
-         NETTRACE SCRIPT
-         ===================================== -->
+    <!-- NetTrace -->
 
     <script src="./script.js"></script>
-
 
 </body>
 
