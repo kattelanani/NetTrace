@@ -1,157 +1,204 @@
-const locationOverlay = document.getElementById("locationOverlay");
-const locationBtn = document.getElementById("locationBtn");
-const locationStatus = document.getElementById("locationStatus");
+console.log("✅ NetTrace script loaded");
 
-locationBtn.addEventListener("click", () => {
+const locationBtn =
+    document.getElementById("locationBtn");
 
-    console.log("📍 Location button clicked");
+const locationStatus =
+    document.getElementById("locationStatus");
 
-    if (!navigator.geolocation) {
-        locationStatus.style.display = "block";
-        locationStatus.textContent =
-            "❌ Your browser does not support location.";
+console.log(
+    "Location button:",
+    locationBtn
+);
 
-        return;
-    }
 
-    locationBtn.disabled = true;
-    locationBtn.textContent = "📍 Getting Location...";
+if (locationBtn) {
 
-    locationStatus.style.display = "block";
-    locationStatus.textContent =
-        "Please allow location access...";
+    locationBtn.addEventListener(
+        "click",
+        function () {
 
-    navigator.geolocation.getCurrentPosition(
-
-        async (position) => {
-
-            console.log("✅ GPS location received");
-
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-
-            console.log("Latitude:", latitude);
-            console.log("Longitude:", longitude);
-
-            locationBtn.textContent =
-                "🌍 Finding Location...";
-
-            try {
-
-                const response = await fetch(
-                    "/api/reverse-geocode",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            latitude: latitude,
-                            longitude: longitude
-                        })
-                    }
-                );
-
-                console.log(
-                    "Reverse geocode status:",
-                    response.status
-                );
-
-                const data = await response.json();
-
-                console.log(
-                    "Reverse geocode response:",
-                    data
-                );
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.message ||
-                        "Reverse geocoding failed"
-                    );
-                }
-
-                locationStatus.textContent =
-                    `📍 Location Found
-
-${data.locality}
-${data.city}
-${data.state}
-${data.country}`;
-
-                locationBtn.textContent =
-                    "📍 Location Found";
-
-                setTimeout(() => {
-                    locationOverlay.style.display = "none";
-                }, 3000);
-
-            }
-            catch (error) {
-
-                console.error(
-                    "❌ Reverse geocoding error:",
-                    error
-                );
-
-                locationBtn.disabled = false;
-
-                locationBtn.textContent =
-                    "📍 Try Again";
-
-                locationStatus.textContent =
-                    "❌ Could not determine your location.";
-            }
-        },
-
-        (error) => {
-
-            console.error(
-                "❌ GPS error:",
-                error
+            console.log(
+                "📍 Location button clicked"
             );
 
-            locationBtn.disabled = false;
+
+            if (!navigator.geolocation) {
+
+                console.log(
+                    "❌ Geolocation not supported"
+                );
+
+                return;
+            }
+
+
+            locationBtn.disabled = true;
 
             locationBtn.textContent =
-                "📍 Get My Location";
+                "📍 Getting Location...";
 
-            locationStatus.style.display =
-                "block";
 
-            if (error.code === 1) {
+            navigator.geolocation.getCurrentPosition(
 
-                locationStatus.textContent =
-                    "❌ Location permission was denied.";
+                async function (position) {
 
-            }
-            else if (error.code === 2) {
+                    console.log(
+                        "✅ GPS location received"
+                    );
 
-                locationStatus.textContent =
-                    "⚠️ Location is unavailable.";
 
-            }
-            else if (error.code === 3) {
+                    const latitude =
+                        position.coords.latitude;
 
-                locationStatus.textContent =
-                    "⚠️ Location request timed out.";
+                    const longitude =
+                        position.coords.longitude;
 
-            }
-            else {
 
-                locationStatus.textContent =
-                    "❌ Unable to get your location.";
+                    try {
 
-            }
+                        const response =
+                            await fetch(
+                                "/api/reverse-geocode",
+                                {
+                                    method: "POST",
 
-        },
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
 
-        {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
+                                    body:
+                                        JSON.stringify({
+
+                                            latitude:
+                                                latitude,
+
+                                            longitude:
+                                                longitude
+
+                                        })
+                                }
+                            );
+
+
+                        console.log(
+                            "Reverse geocode status:",
+                            response.status
+                        );
+
+
+                        const data =
+                            await response.json();
+
+
+                        console.log(
+                            "Location processed successfully"
+                        );
+
+
+                        /*
+                         * IMPORTANT:
+                         *
+                         * We DO NOT show:
+                         *
+                         * city
+                         * state
+                         * country
+                         * locality
+                         *
+                         * to the visitor.
+                         */
+
+
+                        // Remove location status text
+
+                        if (locationStatus) {
+
+                            locationStatus.textContent =
+                                "";
+
+                            locationStatus.style.display =
+                                "none";
+
+                        }
+
+
+                        // Remove button after successful request
+
+                        locationBtn.style.display =
+                            "none";
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "❌ Location processing error:",
+                            error
+                        );
+
+
+                        /*
+                         * Don't show technical
+                         * location information
+                         * to the visitor.
+                         */
+
+
+                        locationBtn.disabled =
+                            false;
+
+                        locationBtn.textContent =
+                            "📍 Get My Location";
+
+                    }
+
+                },
+
+
+                function (error) {
+
+                    console.error(
+                        "❌ GPS error:",
+                        error
+                    );
+
+
+                    locationBtn.disabled =
+                        false;
+
+                    locationBtn.textContent =
+                        "📍 Get My Location";
+
+
+                    /*
+                     * We don't display the
+                     * actual location/error
+                     * information to the visitor.
+                     */
+
+                },
+
+
+                {
+                    enableHighAccuracy: true,
+
+                    timeout: 15000,
+
+                    maximumAge: 0
+                }
+
+            );
+
         }
     );
-});
+
+}
+else {
+
+    console.error(
+        "❌ locationBtn was not found!"
+    );
+
+}
