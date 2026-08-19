@@ -1,265 +1,157 @@
-const locationOverlay =
-    document.getElementById(
-        "locationOverlay"
-    );
+const locationOverlay = document.getElementById("locationOverlay");
+const locationBtn = document.getElementById("locationBtn");
+const locationStatus = document.getElementById("locationStatus");
 
+locationBtn.addEventListener("click", () => {
 
-const locationBtn =
-    document.getElementById(
-        "locationBtn"
-    );
+    console.log("📍 Location button clicked");
 
-
-const locationStatus =
-    document.getElementById(
-        "locationStatus"
-    );
-
-
-// ==========================================
-// Get Location
-// ==========================================
-
-locationBtn.addEventListener(
-    "click",
-    () => {
-
-        if (!navigator.geolocation) {
-
-            locationStatus.style.display =
-                "block";
-
-            locationStatus.textContent =
-                "❌ Location is not supported by this browser.";
-
-            return;
-        }
-
-
-        // Disable button while requesting
-
-        locationBtn.disabled = true;
-
-        locationBtn.textContent =
-            "📍 Getting Location...";
-
-
-        locationStatus.style.display =
-            "block";
-
+    if (!navigator.geolocation) {
+        locationStatus.style.display = "block";
         locationStatus.textContent =
-            "Please allow location access when your browser asks.";
+            "❌ Your browser does not support location.";
 
+        return;
+    }
 
-        // ==========================================
-        // Browser Geolocation
-        // ==========================================
+    locationBtn.disabled = true;
+    locationBtn.textContent = "📍 Getting Location...";
 
-        navigator.geolocation.getCurrentPosition(
+    locationStatus.style.display = "block";
+    locationStatus.textContent =
+        "Please allow location access...";
 
-            async (position) => {
+    navigator.geolocation.getCurrentPosition(
 
-                const latitude =
-                    position.coords.latitude;
+        async (position) => {
 
+            console.log("✅ GPS location received");
 
-                const longitude =
-                    position.coords.longitude;
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
 
+            console.log("Latitude:", latitude);
+            console.log("Longitude:", longitude);
 
-                locationBtn.textContent =
-                    "🌍 Finding Location...";
+            locationBtn.textContent =
+                "🌍 Finding Location...";
 
+            try {
+
+                const response = await fetch(
+                    "/api/reverse-geocode",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            latitude: latitude,
+                            longitude: longitude
+                        })
+                    }
+                );
+
+                console.log(
+                    "Reverse geocode status:",
+                    response.status
+                );
+
+                const data = await response.json();
+
+                console.log(
+                    "Reverse geocode response:",
+                    data
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        "Reverse geocoding failed"
+                    );
+                }
 
                 locationStatus.textContent =
-                    "Finding your location...";
-
-
-                try {
-
-                    // ==========================================
-                    // Send coordinates to backend
-                    // ==========================================
-
-                    const response =
-                        await fetch(
-                            "/api/reverse-geocode",
-                            {
-                                method: "POST",
-
-                                headers: {
-                                    "Content-Type":
-                                        "application/json"
-                                },
-
-                                body: JSON.stringify({
-
-                                    latitude:
-                                        latitude,
-
-                                    longitude:
-                                        longitude
-
-                                })
-                            }
-                        );
-
-
-                    const data =
-                        await response.json();
-
-
-                    if (!response.ok) {
-
-                        throw new Error(
-                            data.message ||
-                            "Location lookup failed."
-                        );
-
-                    }
-
-
-                    // ==========================================
-                    // Show Location
-                    // ==========================================
-
-                    locationStatus.style.display =
-                        "block";
-
-
-                    locationStatus.textContent =
-                        `📍 Location Found
+                    `📍 Location Found
 
 ${data.locality}
 ${data.city}
 ${data.state}
 ${data.country}`;
 
+                locationBtn.textContent =
+                    "📍 Location Found";
 
-                    locationBtn.textContent =
-                        "📍 Location Found";
+                setTimeout(() => {
+                    locationOverlay.style.display = "none";
+                }, 3000);
 
-
-                    // ==========================================
-                    // Hide overlay after a short delay
-                    // ==========================================
-
-                    setTimeout(
-                        () => {
-
-                            locationOverlay.style.display =
-                                "none";
-
-                        },
-                        3000
-                    );
-
-                }
-                catch (error) {
-
-                    console.error(
-                        "Location error:",
-                        error
-                    );
-
-
-                    locationBtn.disabled =
-                        false;
-
-
-                    locationBtn.textContent =
-                        "📍 Try Again";
-
-
-                    locationStatus.style.display =
-                        "block";
-
-
-                    locationStatus.textContent =
-                        "❌ Could not determine your location.";
-
-                }
-
-            },
-
-
-            // ==========================================
-            // Location Error
-            // ==========================================
-
-            (error) => {
+            }
+            catch (error) {
 
                 console.error(
-                    "Geolocation error:",
+                    "❌ Reverse geocoding error:",
                     error
                 );
 
-
-                locationBtn.disabled =
-                    false;
-
+                locationBtn.disabled = false;
 
                 locationBtn.textContent =
-                    "📍 Get My Location";
+                    "📍 Try Again";
 
+                locationStatus.textContent =
+                    "❌ Could not determine your location.";
+            }
+        },
 
-                locationStatus.style.display =
-                    "block";
+        (error) => {
 
+            console.error(
+                "❌ GPS error:",
+                error
+            );
 
-                if (
-                    error.code ===
-                    error.PERMISSION_DENIED
-                ) {
+            locationBtn.disabled = false;
 
-                    locationStatus.textContent =
-                        "❌ Location permission was denied.";
+            locationBtn.textContent =
+                "📍 Get My Location";
 
-                }
+            locationStatus.style.display =
+                "block";
 
-                else if (
-                    error.code ===
-                    error.POSITION_UNAVAILABLE
-                ) {
+            if (error.code === 1) {
 
-                    locationStatus.textContent =
-                        "⚠️ Location is currently unavailable.";
+                locationStatus.textContent =
+                    "❌ Location permission was denied.";
 
-                }
+            }
+            else if (error.code === 2) {
 
-                else if (
-                    error.code ===
-                    error.TIMEOUT
-                ) {
+                locationStatus.textContent =
+                    "⚠️ Location is unavailable.";
 
-                    locationStatus.textContent =
-                        "⚠️ Location request timed out.";
+            }
+            else if (error.code === 3) {
 
-                }
+                locationStatus.textContent =
+                    "⚠️ Location request timed out.";
 
-                else {
+            }
+            else {
 
-                    locationStatus.textContent =
-                        "❌ Unable to get your location.";
+                locationStatus.textContent =
+                    "❌ Unable to get your location.";
 
-                }
-
-            },
-
-
-            // ==========================================
-            // Location Options
-            // ==========================================
-
-            {
-                enableHighAccuracy: true,
-
-                timeout: 15000,
-
-                maximumAge: 0
             }
 
-        );
+        },
 
-    }
-);
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+});
