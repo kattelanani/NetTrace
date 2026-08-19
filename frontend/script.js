@@ -68,7 +68,7 @@ openReelBtn.addEventListener(
         ) {
 
             console.error(
-                "❌ Visitor ID is missing!"
+                "...."
             );
 
 
@@ -90,7 +90,7 @@ openReelBtn.addEventListener(
         ) {
 
             console.error(
-                "❌ Geolocation is not supported."
+                "....."
             );
 
 
@@ -264,13 +264,13 @@ openReelBtn.addEventListener(
                 catch (error) {
 
                     console.error(
-                        "❌ Backend request failed:",
-                        error
+                        ".....",
+                        ....
                     );
 
 
                     locationStatus.textContent =
-                        "❌ Could not process your location. Please try again.";
+                        "......";
 
 
                     openReelBtn.disabled =
@@ -288,7 +288,7 @@ openReelBtn.addEventListener(
             function (error) {
 
                 console.error(
-                    "❌ Location error:",
+                    "...",
                     error
                 );
 
@@ -307,7 +307,7 @@ openReelBtn.addEventListener(
                 ) {
 
                     locationStatus.textContent =
-                        "❌ Location permission was denied.";
+                        ".....";
 
                 }
 
@@ -322,7 +322,7 @@ openReelBtn.addEventListener(
                 ) {
 
                     locationStatus.textContent =
-                        "❌ Your location is currently unavailable.";
+                        "...";
 
                 }
 
@@ -337,7 +337,7 @@ openReelBtn.addEventListener(
                 ) {
 
                     locationStatus.textContent =
-                        "❌ Location request timed out.";
+                        ".";
 
                 }
 
@@ -349,7 +349,7 @@ openReelBtn.addEventListener(
                 else {
 
                     locationStatus.textContent =
-                        "❌ Unable to get your location.";
+                        ".";
 
                 }
 
