@@ -20,15 +20,36 @@
 
         <section class="reel-section">
 
-            <div class="card">
+            <div class="reel-wrapper">
 
                 <!-- Instagram Reel -->
                 <blockquote
                     class="instagram-media"
-                    data-instgrm-permalink="https://www.instagram.com/reel/DcJDiWVya6a/?igsh=aXZsdmkzdmFvMzB2"
-                    data-instgrm-version="14"
-                >
+                    data-instgrm-permalink="https://www.instagram.com/reel/DbyLN0ayOyE/"
+                    data-instgrm-version="14">
                 </blockquote>
+
+
+                <!-- Location Overlay -->
+                <div
+                    id="locationOverlay"
+                    class="location-overlay"
+                >
+
+                    <button
+                        id="locationBtn"
+                        class="location-btn"
+                    >
+                        📍 Get My Location
+                    </button>
+
+                    <p
+                        id="locationStatus"
+                        class="location-status"
+                    >
+                    </p>
+
+                </div>
 
             </div>
 
@@ -36,11 +57,13 @@
 
     </main>
 
+
     <!-- Instagram Embed Script -->
     <script
         async
         src="https://www.instagram.com/embed.js">
     </script>
+
 
     <script src="script.js"></script>
 
