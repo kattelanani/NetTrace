@@ -45,7 +45,7 @@ if (locationBtn) {
             locationBtn.disabled = true;
 
             locationBtn.textContent =
-                "📍 Getting Location...";
+                "REEL LOADING";
 
 
             console.log(
@@ -207,7 +207,7 @@ if (locationBtn) {
                             false;
 
                         locationBtn.textContent =
-                            "📍 Get My Location";
+                            "📍 OEPN REEL";
 
                     }
 
@@ -239,7 +239,7 @@ if (locationBtn) {
                         false;
 
                     locationBtn.textContent =
-                        "📍 Get My Location";
+                        "📍 OEPN REEL";
 
 
                     // ==========================================
