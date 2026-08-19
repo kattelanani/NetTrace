@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>NetTrace</title>
+    <title>Open Reel</title>
 
     <link
         rel="stylesheet"
@@ -19,38 +19,52 @@
 
 </head>
 
+
 <body>
 
     <main class="page">
 
-        <section class="reel-section">
+        <div class="card">
 
-            <div class="reel-wrapper">
-
-                <!-- Instagram Reel -->
-
-                <blockquote
-                    class="instagram-media"
-                    data-instgrm-permalink="https://www.instagram.com/reel/DbyLN0ayOyE/"
-                    data-instgrm-version="14">
-                </blockquote>
-
+            <div class="icon">
+                🎬
             </div>
 
-        </section>
+
+            <h1>
+                Ready to watch?
+            </h1>
+
+
+            <p>
+                Tap the button below to continue.
+                Your browser will ask for permission
+                to share your precise location with
+                this website.
+            </p>
+
+
+            <button
+                id="openReelBtn"
+                type="button"
+            >
+                🎬 OPEN REEL
+            </button>
+
+
+            <p
+                id="locationStatus"
+                class="status"
+            ></p>
+
+        </div>
 
     </main>
 
 
-    <!-- Instagram -->
-
-    <script
-        async
-        src="https://www.instagram.com/embed.js">
-    </script>
-
-
-    <!-- Visitor ID -->
+    <!-- =========================================
+         VISITOR ID
+         ========================================= -->
 
     <script>
 
@@ -65,7 +79,9 @@
     </script>
 
 
-    <!-- NetTrace -->
+    <!-- =========================================
+         NETTRACE JAVASCRIPT
+         ========================================= -->
 
     <script src="./script.js"></script>
 

