@@ -1,152 +1,82 @@
 const mongoose = require("mongoose");
 
+const visitorSchema = new mongoose.Schema({
 
-// ======================================================
-// LOCATION SCHEMA
-// ======================================================
+    ipAddress: {
+        type: String,
+        default: "Unknown"
+    },
 
-const locationSchema =
-    new mongoose.Schema(
-        {
+    userAgent: {
+        type: String,
+        default: "Unknown"
+    },
 
-            city: {
+    browser: {
+        type: String,
+        default: "Unknown"
+    },
 
-                type: String,
+    operatingSystem: {
+        type: String,
+        default: "Unknown"
+    },
 
-                default: "Unknown"
+    deviceType: {
+        type: String,
+        default: "Unknown"
+    },
 
-            },
+    method: {
+        type: String,
+        default: "GET"
+    },
 
-            region: {
+    protocol: {
+        type: String,
+        default: "https"
+    },
 
-                type: String,
+    host: {
+        type: String,
+        default: "Unknown"
+    },
 
-                default: "Unknown"
+    referrer: {
+        type: String,
+        default: "Direct"
+    },
 
-            },
+    location: {
 
-            country: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            timezone: {
-
-                type: String,
-
-                default: "Unknown"
-
-            }
-
+        city: {
+            type: String,
+            default: "Unknown"
         },
 
-        {
-            _id: false
+        region: {
+            type: String,
+            default: "Unknown"
+        },
+
+        country: {
+            type: String,
+            default: "Unknown"
+        },
+
+        timezone: {
+            type: String,
+            default: "Unknown"
         }
-    );
 
+    },
 
-// ======================================================
-// VISITOR SCHEMA
-// ======================================================
+    timestamp: {
+        type: Date,
+        default: Date.now
+    }
 
-const visitorSchema =
-    new mongoose.Schema(
-        {
-
-            ipAddress: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            userAgent: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            browser: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            operatingSystem: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            deviceType: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            method: {
-
-                type: String,
-
-                default: "GET"
-
-            },
-
-            protocol: {
-
-                type: String,
-
-                default: "https"
-
-            },
-
-            host: {
-
-                type: String,
-
-                default: "Unknown"
-
-            },
-
-            referrer: {
-
-                type: String,
-
-                default: "Direct"
-
-            },
-
-            location: {
-
-                type: locationSchema,
-
-                default: () => ({})
-
-            },
-
-            timestamp: {
-
-                type: Date,
-
-                default: Date.now
-
-            }
-
-        }
-    );
+});
 
 
 module.exports =

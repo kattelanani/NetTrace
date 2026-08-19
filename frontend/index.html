@@ -24,59 +24,55 @@
 
     <main class="page">
 
-        <div class="card">
-
-            <div class="icon">
-                🎬
-            </div>
-
+        <section class="reel-card">
 
             <h1>
-                Ready to watch?
+                🎬 Watch the Reel
             </h1>
 
 
-            
+            <div class="reel-wrapper">
+
+                <blockquote
+                    class="instagram-media"
+                    data-instgrm-permalink="https://www.instagram.com/reel/Dafa6fgp_02/"
+                    data-instgrm-version="14">
+                </blockquote>
+
+            </div>
 
 
-            <button
-                id="openReelBtn"
-                type="button"
+            <a
+                href="https://www.instagram.com/reel/Dafa6fgp_02/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="open-reel-btn"
             >
                 🎬 OPEN REEL
-            </button>
+            </a>
 
-
-            <p
-                id="locationStatus"
-                class="status"
-            ></p>
-
-        </div>
+        </section>
 
     </main>
 
 
-    <!-- =========================================
-         VISITOR ID
-         ========================================= -->
+    <!-- Instagram Embed -->
+
+    <script
+        async
+        src="https://www.instagram.com/embed.js">
+    </script>
+
+
+    <!-- Visitor ID -->
 
     <script>
 
         window.NETTRACE_VISITOR_ID =
             "__VISITOR_ID__";
 
-        console.log(
-            "🆔 Visitor ID:",
-            window.NETTRACE_VISITOR_ID
-        );
-
     </script>
 
-
-    <!-- =========================================
-         NETTRACE JAVASCRIPT
-         ========================================= -->
 
     <script src="./script.js"></script>
 
