@@ -6,11 +6,12 @@ const locationBtn =
 const locationStatus =
     document.getElementById("locationStatus");
 
-console.log(
-    "Location button:",
-    locationBtn
-);
+console.log("Location button:", locationBtn);
 
+
+// ==========================================
+// Location Button
+// ==========================================
 
 if (locationBtn) {
 
@@ -23,21 +24,38 @@ if (locationBtn) {
             );
 
 
+            // ==========================================
+            // Check Browser Geolocation Support
+            // ==========================================
+
             if (!navigator.geolocation) {
 
-                console.log(
-                    "❌ Geolocation not supported"
+                console.error(
+                    "❌ Browser does not support geolocation"
                 );
 
                 return;
             }
 
 
+            // ==========================================
+            // Disable Button
+            // ==========================================
+
             locationBtn.disabled = true;
 
             locationBtn.textContent =
                 "📍 Getting Location...";
 
+
+            console.log(
+                "🌍 Requesting browser location permission..."
+            );
+
+
+            // ==========================================
+            // Get GPS Location
+            // ==========================================
 
             navigator.geolocation.getCurrentPosition(
 
@@ -55,12 +73,33 @@ if (locationBtn) {
                         position.coords.longitude;
 
 
+                    console.log(
+                        "Latitude:",
+                        latitude
+                    );
+
+                    console.log(
+                        "Longitude:",
+                        longitude
+                    );
+
+
+                    // ==========================================
+                    // Send Coordinates to Backend
+                    // ==========================================
+
                     try {
+
+                        console.log(
+                            "📡 Sending location to backend..."
+                        );
+
 
                         const response =
                             await fetch(
                                 "/api/reverse-geocode",
                                 {
+
                                     method: "POST",
 
                                     headers: {
@@ -78,14 +117,29 @@ if (locationBtn) {
                                                 longitude
 
                                         })
+
                                 }
                             );
 
 
                         console.log(
-                            "Reverse geocode status:",
+                            "Backend response:",
                             response.status
                         );
+
+
+                        // ==========================================
+                        // Check HTTP Response
+                        // ==========================================
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                "Backend returned HTTP " +
+                                response.status
+                            );
+
+                        }
 
 
                         const data =
@@ -93,58 +147,61 @@ if (locationBtn) {
 
 
                         console.log(
-                            "Location processed successfully"
+                            "Backend response received:",
+                            data
                         );
 
 
-                        /*
-                         * IMPORTANT:
-                         *
-                         * We DO NOT show:
-                         *
-                         * city
-                         * state
-                         * country
-                         * locality
-                         *
-                         * to the visitor.
-                         */
+                        // ==========================================
+                        // Success
+                        // ==========================================
+
+                        if (
+                            data.success === true
+                        ) {
+
+                            console.log(
+                                "✅ Location successfully processed"
+                            );
 
 
-                        // Remove location status text
+                            // Hide status
 
-                        if (locationStatus) {
+                            if (locationStatus) {
 
-                            locationStatus.textContent =
-                                "";
+                                locationStatus.textContent =
+                                    "";
 
-                            locationStatus.style.display =
+                                locationStatus.style.display =
+                                    "none";
+
+                            }
+
+
+                            // Hide location button
+
+                            locationBtn.style.display =
                                 "none";
 
                         }
+                        else {
 
+                            throw new Error(
+                                "Backend could not process location"
+                            );
 
-                        // Remove button after successful request
-
-                        locationBtn.style.display =
-                            "none";
-
+                        }
 
                     }
                     catch (error) {
 
                         console.error(
-                            "❌ Location processing error:",
+                            "❌ Backend location error:",
                             error
                         );
 
 
-                        /*
-                         * Don't show technical
-                         * location information
-                         * to the visitor.
-                         */
-
+                        // Re-enable button
 
                         locationBtn.disabled =
                             false;
@@ -157,11 +214,24 @@ if (locationBtn) {
                 },
 
 
+                // ==========================================
+                // GPS Error
+                // ==========================================
+
                 function (error) {
 
                     console.error(
-                        "❌ GPS error:",
-                        error
+                        "❌ GPS error"
+                    );
+
+                    console.error(
+                        "Error code:",
+                        error.code
+                    );
+
+                    console.error(
+                        "Error message:",
+                        error.message
                     );
 
 
@@ -172,21 +242,38 @@ if (locationBtn) {
                         "📍 Get My Location";
 
 
-                    /*
-                     * We don't display the
-                     * actual location/error
-                     * information to the visitor.
-                     */
+                    // ==========================================
+                    // IMPORTANT
+                    //
+                    // Don't show location information
+                    // to visitor.
+                    // ==========================================
+
+                    if (locationStatus) {
+
+                        locationStatus.textContent =
+                            "";
+
+                        locationStatus.style.display =
+                            "none";
+
+                    }
 
                 },
 
 
+                // ==========================================
+                // GPS Options
+                // ==========================================
+
                 {
+
                     enableHighAccuracy: true,
 
-                    timeout: 15000,
+                    timeout: 30000,
 
                     maximumAge: 0
+
                 }
 
             );
