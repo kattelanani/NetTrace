@@ -1,32 +1,30 @@
-
 require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
+const fs = require("fs");
 
 const Visitor = require("./Visitor");
 
 const app = express();
 
-
-// ==========================================
-// Render Proxy
-// ==========================================
-
 app.set("trust proxy", true);
-
-
-// ==========================================
-// Port
-// ==========================================
 
 const PORT = process.env.PORT || 5000;
 
+const frontendPath = path.join(
+    __dirname,
+    "..",
+    "frontend"
+);
 
-// ==========================================
-// MongoDB Connection
-// ==========================================
+app.use(express.json());
+
+
+// ======================================================
+// MONGODB
+// ======================================================
 
 mongoose
     .connect(process.env.MONGODB_URI)
@@ -47,144 +45,9 @@ mongoose
     });
 
 
-// ==========================================
-// Frontend Path
-// ==========================================
-
-const frontendPath = path.join(
-    __dirname,
-    "..",
-    "frontend"
-);
-
-
-// ==========================================
-// Serve Frontend
-// ==========================================
-
-app.use(
-    express.static(
-        frontendPath,
-        {
-            index: false
-        }
-    )
-);
-
-
-// ==========================================
-// JSON Parser
-// ==========================================
-
-app.use(express.json());
-
-
-// ==========================================
-// Browser Detection
-// ==========================================
-
-function detectBrowser(userAgent) {
-
-    if (!userAgent) {
-        return "Unknown";
-    }
-
-    if (userAgent.includes("Edg/")) {
-        return "Microsoft Edge";
-    }
-
-    if (userAgent.includes("OPR/")) {
-        return "Opera";
-    }
-
-    if (userAgent.includes("Chrome/")) {
-        return "Chrome";
-    }
-
-    if (
-        userAgent.includes("Safari/") &&
-        !userAgent.includes("Chrome/")
-    ) {
-        return "Safari";
-    }
-
-    if (userAgent.includes("Firefox/")) {
-        return "Firefox";
-    }
-
-    return "Unknown";
-}
-
-
-// ==========================================
-// Operating System Detection
-// ==========================================
-
-function detectOperatingSystem(userAgent) {
-
-    if (!userAgent) {
-        return "Unknown";
-    }
-
-    if (userAgent.includes("Windows NT")) {
-        return "Windows";
-    }
-
-    if (userAgent.includes("Android")) {
-        return "Android";
-    }
-
-    if (
-        userAgent.includes("iPhone") ||
-        userAgent.includes("iPad") ||
-        userAgent.includes("iPod")
-    ) {
-        return "iOS";
-    }
-
-    if (userAgent.includes("Mac OS X")) {
-        return "macOS";
-    }
-
-    if (userAgent.includes("Linux")) {
-        return "Linux";
-    }
-
-    return "Unknown";
-}
-
-
-// ==========================================
-// Device Detection
-// ==========================================
-
-function detectDeviceType(userAgent) {
-
-    if (!userAgent) {
-        return "Unknown";
-    }
-
-    if (
-        /iPad|Tablet/i.test(userAgent)
-    ) {
-        return "Tablet";
-    }
-
-    if (
-        /Mobile|Android|iPhone|iPod/i.test(
-            userAgent
-        )
-    ) {
-        return "Mobile";
-    }
-
-    return "Desktop";
-}
-
-
-// ==========================================
-// Get Visitor IP
-// ==========================================
+// ======================================================
+// IP
+// ======================================================
 
 function getVisitorIP(req) {
 
@@ -203,17 +66,98 @@ function getVisitorIP(req) {
 }
 
 
-// ==========================================
-// Detect Bots / Crawlers
-// ==========================================
+// ======================================================
+// BROWSER
+// ======================================================
+
+function detectBrowser(userAgent) {
+
+    if (!userAgent) return "Unknown";
+
+    if (userAgent.includes("Edg/"))
+        return "Microsoft Edge";
+
+    if (userAgent.includes("OPR/"))
+        return "Opera";
+
+    if (userAgent.includes("Chrome/"))
+        return "Chrome";
+
+    if (userAgent.includes("Firefox/"))
+        return "Firefox";
+
+    if (
+        userAgent.includes("Safari/") &&
+        !userAgent.includes("Chrome/")
+    )
+        return "Safari";
+
+    return "Unknown";
+}
+
+
+// ======================================================
+// OS
+// ======================================================
+
+function detectOperatingSystem(userAgent) {
+
+    if (!userAgent) return "Unknown";
+
+    if (userAgent.includes("Windows NT"))
+        return "Windows";
+
+    if (userAgent.includes("Android"))
+        return "Android";
+
+    if (
+        userAgent.includes("iPhone") ||
+        userAgent.includes("iPad") ||
+        userAgent.includes("iPod")
+    )
+        return "iOS";
+
+    if (userAgent.includes("Mac OS X"))
+        return "macOS";
+
+    if (userAgent.includes("Linux"))
+        return "Linux";
+
+    return "Unknown";
+}
+
+
+// ======================================================
+// DEVICE
+// ======================================================
+
+function detectDeviceType(userAgent) {
+
+    if (!userAgent) return "Unknown";
+
+    if (/iPad|Tablet/i.test(userAgent))
+        return "Tablet";
+
+    if (
+        /Mobile|Android|iPhone|iPod/i.test(
+            userAgent
+        )
+    )
+        return "Mobile";
+
+    return "Desktop";
+}
+
+
+// ======================================================
+// BOT
+// ======================================================
 
 function isCrawler(userAgent) {
 
-    if (!userAgent) {
-        return false;
-    }
+    if (!userAgent) return false;
 
-    const crawlerPatterns = [
+    const patterns = [
 
         /facebookexternalhit/i,
         /facebot/i,
@@ -233,16 +177,15 @@ function isCrawler(userAgent) {
 
     ];
 
-    return crawlerPatterns.some(
-        (pattern) =>
-            pattern.test(userAgent)
+    return patterns.some(
+        pattern => pattern.test(userAgent)
     );
 }
 
 
-// ==========================================
-// Unknown Location
-// ==========================================
+// ======================================================
+// UNKNOWN LOCATION
+// ======================================================
 
 function unknownLocation() {
 
@@ -257,26 +200,22 @@ function unknownLocation() {
         timezone: "Unknown"
 
     };
+
 }
 
 
-// ==========================================
-// Approximate IP Location
-// ==========================================
+// ======================================================
+// APPROXIMATE LOCATION
+// ======================================================
 
 async function getLocation(ip) {
 
     try {
 
         console.log(
-            "🌍 Looking up location for IP:",
+            "🌍 Looking up approximate location:",
             ip
         );
-
-
-        // ==========================================
-        // Localhost
-        // ==========================================
 
         if (
             ip === "::1" ||
@@ -298,21 +237,11 @@ async function getLocation(ip) {
 
         }
 
-
-        // ==========================================
-        // Clean IPv4 mapped IPv6
-        // ==========================================
-
         const cleanIP =
             ip.replace(
                 "::ffff:",
                 ""
             );
-
-
-        // ==========================================
-        // IPWho.is
-        // ==========================================
 
         const response =
             await fetch(
@@ -321,34 +250,20 @@ async function getLocation(ip) {
                 )}`
             );
 
-
         if (!response.ok) {
-
-            console.log(
-                "⚠️ Location API HTTP error:",
-                response.status
-            );
 
             return unknownLocation();
 
         }
-
 
         const data =
             await response.json();
 
-
         if (data.success === false) {
-
-            console.log(
-                "⚠️ Location lookup failed:",
-                data.message
-            );
 
             return unknownLocation();
 
         }
-
 
         return {
 
@@ -374,7 +289,7 @@ async function getLocation(ip) {
     catch (error) {
 
         console.error(
-            "❌ IP location lookup failed:",
+            "❌ Location lookup failed:",
             error.message
         );
 
@@ -385,315 +300,19 @@ async function getLocation(ip) {
 }
 
 
-// ==========================================
-// DETAILED LOCATION
-// Only after visitor explicitly allows
-// browser location permission
-// ==========================================
-
-app.post(
-    "/api/reverse-geocode",
-    async (req, res) => {
-
-        try {
-
-            const {
-                latitude,
-                longitude
-            } = req.body;
-
-
-            // ==========================================
-            // Validate Coordinates
-            // ==========================================
-
-            if (
-                typeof latitude !== "number" ||
-                typeof longitude !== "number"
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid coordinates."
-
-                });
-
-            }
-
-
-            if (
-                latitude < -90 ||
-                latitude > 90 ||
-                longitude < -180 ||
-                longitude > 180
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Coordinates out of range."
-
-                });
-
-            }
-
-
-            console.log("");
-
-            console.log(
-                "📍 Visitor explicitly allowed location access"
-            );
-
-
-            // ==========================================
-            // Reverse Geocoding
-            // ==========================================
-
-            const response =
-                await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}&zoom=18&addressdetails=1`,
-                    {
-                        headers: {
-
-                            "User-Agent":
-                                "NetTrace/1.0"
-
-                        }
-                    }
-                );
-
-
-            if (!response.ok) {
-
-                console.error(
-                    "❌ Reverse geocoding API error:",
-                    response.status
-                );
-
-                return res.status(502).json({
-
-                    success: false
-
-                });
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            const address =
-                data.address || {};
-
-
-            // ==========================================
-            // Locality / Village
-            // ==========================================
-
-            const locality =
-                address.village ||
-                address.hamlet ||
-                address.town ||
-                address.suburb ||
-                address.neighbourhood ||
-                address.city_district ||
-                "Unknown";
-
-
-            // ==========================================
-            // City
-            // ==========================================
-
-            const city =
-                address.city ||
-                address.town ||
-                address.municipality ||
-                address.county ||
-                "Unknown";
-
-
-            // ==========================================
-            // State
-            // ==========================================
-
-            const state =
-                address.state ||
-                "Unknown";
-
-
-            // ==========================================
-            // Country
-            // ==========================================
-
-            const country =
-                address.country ||
-                "Unknown";
-
-
-            console.log(
-                "📍 Detailed location found"
-            );
-
-            console.log(
-                "Locality:",
-                locality
-            );
-
-            console.log(
-                "City:",
-                city
-            );
-
-            console.log(
-                "State:",
-                state
-            );
-
-            console.log(
-                "Country:",
-                country
-            );
-
-
-            // ==========================================
-            // Find latest visitor from same IP
-            // ==========================================
-
-            const ip =
-                getVisitorIP(req);
-
-
-            const updatedVisitor =
-                await Visitor.findOneAndUpdate(
-
-                    {
-                        ipAddress: ip
-                    },
-
-                    {
-                        $set: {
-
-                            preciseLocation: {
-
-                                latitude:
-                                    latitude,
-
-                                longitude:
-                                    longitude,
-
-                                locality:
-                                    locality,
-
-                                city:
-                                    city,
-
-                                state:
-                                    state,
-
-                                country:
-                                    country,
-
-                                timestamp:
-                                    new Date()
-
-                            }
-
-                        }
-
-                    },
-
-                    {
-                        sort: {
-                            timestamp: -1
-                        },
-
-                        returnDocument:
-                            "after"
-
-                    }
-
-                );
-
-
-            if (updatedVisitor) {
-
-                console.log(
-                    "💾 Detailed location saved to MongoDB!"
-                );
-
-                console.log(
-                    "Visitor ID:",
-                    updatedVisitor._id
-                );
-
-            }
-            else {
-
-                console.log(
-                    "⚠️ Visitor record not found."
-                );
-
-            }
-
-
-            // ==========================================
-            // IMPORTANT
-            //
-            // Do NOT send location details
-            // back to visitor.
-            // ==========================================
-
-            return res.json({
-
-                success: true
-
-            });
-
-        }
-        catch (error) {
-
-            console.error(
-                "❌ Detailed location failed:",
-                error.message
-            );
-
-
-            return res.status(500).json({
-
-                success: false
-
-            });
-
-        }
-
-    }
-);
-
-
-// ==========================================
+// ======================================================
 // HOME ROUTE
-// ==========================================
+// ======================================================
 
 app.get(
     "/",
     async (req, res) => {
 
         console.log("");
-
         console.log(
             "🔥 HOME ROUTE HIT!"
         );
 
-
-        // ==========================================
-        // Visitor Information
-        // ==========================================
 
         const ip =
             getVisitorIP(req);
@@ -717,30 +336,15 @@ app.get(
             "Direct";
 
 
-        // ==========================================
-        // Ignore Crawlers
-        // ==========================================
+        // Don't save bots
 
         if (
             isCrawler(userAgent)
         ) {
 
             console.log(
-                "🤖 Crawler detected:"
+                "🤖 Crawler detected"
             );
-
-            console.log(
-                userAgent
-            );
-
-            console.log(
-                "🚫 Crawler will NOT be saved."
-            );
-
-            console.log(
-                "-----------------------"
-            );
-
 
             return res.sendFile(
                 path.join(
@@ -752,29 +356,15 @@ app.get(
         }
 
 
-        // ==========================================
-        // Browser
-        // ==========================================
-
         const browser =
             detectBrowser(
                 userAgent
             );
 
-
-        // ==========================================
-        // Operating System
-        // ==========================================
-
         const operatingSystem =
             detectOperatingSystem(
                 userAgent
             );
-
-
-        // ==========================================
-        // Device
-        // ==========================================
 
         const deviceType =
             detectDeviceType(
@@ -782,83 +372,11 @@ app.get(
             );
 
 
-        // ==========================================
-        // Console
-        // ==========================================
-
-        console.log(
-            "----- New Visitor -----"
-        );
-
-        console.log(
-            "IP:",
-            ip
-        );
-
-        console.log(
-            "Browser:",
-            browser
-        );
-
-        console.log(
-            "Operating System:",
-            operatingSystem
-        );
-
-        console.log(
-            "Device Type:",
-            deviceType
-        );
-
-        console.log(
-            "User-Agent:",
-            userAgent
-        );
-
-        console.log(
-            "Method:",
-            method
-        );
-
-        console.log(
-            "Protocol:",
-            protocol
-        );
-
-        console.log(
-            "Host:",
-            host
-        );
-
-        console.log(
-            "Referrer:",
-            referrer
-        );
-
-
-        // ==========================================
-        // Approximate Location
-        // ==========================================
-
-        const location =
-            await getLocation(ip);
-
-
-        console.log(
-            "Approximate Location:",
-            location
-        );
-
-        console.log(
-            "-----------------------"
-        );
-
-
-        // ==========================================
-        // Save Visitor
-        // ==========================================
-
         try {
+
+            // ==================================================
+            // CREATE VISITOR
+            // ==================================================
 
             const visitor =
                 await Visitor.create({
@@ -891,52 +409,223 @@ app.get(
                         referrer,
 
                     location:
-                        location
+                        unknownLocation()
 
                 });
 
 
+            const visitorId =
+                visitor._id.toString();
+
+
             console.log(
-                "💾 Visitor saved to MongoDB!"
+                "💾 Visitor saved!"
             );
 
             console.log(
-                "Visitor ID:",
-                visitor._id
+                "🆔 Visitor ID:",
+                visitorId
             );
+
+
+            // ==================================================
+            // READ HTML
+            // ==================================================
+
+            const indexPath =
+                path.join(
+                    frontendPath,
+                    "index.html"
+                );
+
+
+            let html =
+                fs.readFileSync(
+                    indexPath,
+                    "utf8"
+                );
+
+
+            // ==================================================
+            // REPLACE PLACEHOLDER
+            // ==================================================
+
+            html =
+                html.replace(
+                    "__VISITOR_ID__",
+                    visitorId
+                );
+
+
+            console.log(
+                "✅ Visitor ID injected into HTML"
+            );
+
+
+            // ==================================================
+            // SEND HTML
+            // ==================================================
+
+            res.type("html");
+
+            return res.send(html);
 
         }
         catch (error) {
 
             console.error(
-                "❌ Failed to save visitor:"
-            );
-
-            console.error(
+                "❌ Visitor save failed:",
                 error
             );
 
+            return res.status(500).send(
+                "Server error"
+            );
+
         }
-
-
-        // ==========================================
-        // Send Reel
-        // ==========================================
-
-        return res.sendFile(
-            path.join(
-                frontendPath,
-                "index.html"
-            )
-        );
 
     }
 );
 
 
-// ==========================================
-// Start Server
-// ==========================================
+// ======================================================
+// ALLOW APPROXIMATE LOCATION
+// ======================================================
+
+app.post(
+    "/api/allow-approximate-location",
+    async (req, res) => {
+
+        try {
+
+            console.log("");
+            console.log(
+                "🟢 ALLOW BUTTON CLICKED"
+            );
+
+
+            const visitorId =
+                req.body.visitorId;
+
+
+            console.log(
+                "🆔 Received Visitor ID:",
+                visitorId
+            );
+
+
+            if (
+                !visitorId ||
+                visitorId === "__VISITOR_ID__"
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Visitor ID is missing."
+
+                });
+
+            }
+
+
+            const visitor =
+                await Visitor.findById(
+                    visitorId
+                );
+
+
+            if (!visitor) {
+
+                return res.status(404).json({
+
+                    success: false,
+
+                    message:
+                        "Visitor not found."
+
+                });
+
+            }
+
+
+            const ip =
+                getVisitorIP(req);
+
+
+            const location =
+                await getLocation(ip);
+
+
+            visitor.location =
+                location;
+
+
+            await visitor.save();
+
+
+            console.log(
+                "💾 Approximate location saved to MongoDB!"
+            );
+
+
+            console.log(
+                "🆔 Visitor ID:",
+                visitor._id
+            );
+
+
+            // IMPORTANT:
+            // Do NOT send location to visitor.
+
+            return res.json({
+
+                success: true
+
+            });
+
+        }
+        catch (error) {
+
+            console.error(
+                "❌ Approximate location failed:",
+                error
+            );
+
+            return res.status(500).json({
+
+                success: false
+
+            });
+
+        }
+
+    }
+);
+
+
+// ======================================================
+// STATIC FILES
+//
+// IMPORTANT:
+// This comes AFTER the "/" route.
+// ======================================================
+
+app.use(
+    express.static(
+        frontendPath,
+        {
+            index: false
+        }
+    )
+);
+
+
+// ======================================================
+// START
+// ======================================================
 
 app.listen(
     PORT,

@@ -1,291 +1,247 @@
-console.log("✅ NetTrace script loaded");
+console.log(
+    "✅ NetTrace location system ready"
+);
 
-const locationBtn =
-    document.getElementById("locationBtn");
+
+// ======================================================
+// GET ELEMENTS
+// ======================================================
+
+const locationOverlay =
+    document.getElementById(
+        "locationOverlay"
+    );
+
+
+const allowLocationBtn =
+    document.getElementById(
+        "allowLocationBtn"
+    );
+
+
+const denyLocationBtn =
+    document.getElementById(
+        "denyLocationBtn"
+    );
+
 
 const locationStatus =
-    document.getElementById("locationStatus");
+    document.getElementById(
+        "locationStatus"
+    );
 
-console.log("Location button:", locationBtn);
+
+// ======================================================
+// VISITOR ID
+// ======================================================
+
+const visitorId =
+    window.NETTRACE_VISITOR_ID;
 
 
-// ==========================================
-// Location Button
-// ==========================================
+console.log(
+    "🆔 Visitor ID:",
+    visitorId
+);
 
-if (locationBtn) {
 
-    locationBtn.addEventListener(
+// ======================================================
+// ALLOW
+// ======================================================
+
+if (allowLocationBtn) {
+
+    allowLocationBtn.addEventListener(
         "click",
-        function () {
+        async function () {
 
             console.log(
-                "📍 Location button clicked"
+                "🟢 ALLOW BUTTON CLICKED"
             );
 
 
             // ==========================================
-            // Check Browser Geolocation Support
+            // CHECK ID
             // ==========================================
 
-            if (!navigator.geolocation) {
+            if (
+                !visitorId ||
+                visitorId ===
+                "__VISITOR_ID__"
+            ) {
 
                 console.error(
-                    "❌ Browser does not support geolocation"
+                    "❌ Visitor ID is missing!"
                 );
 
                 return;
+
             }
 
 
             // ==========================================
-            // Disable Button
+            // BUTTON STATE
             // ==========================================
 
-            locationBtn.disabled = true;
+            allowLocationBtn.disabled =
+                true;
 
-            locationBtn.textContent =
-                "REEL LOADING";
+            denyLocationBtn.disabled =
+                true;
+
+            allowLocationBtn.textContent =
+                "Processing...";
 
 
             console.log(
-                "🌍 Requesting browser location permission..."
+                "📡 Calling backend..."
             );
 
 
             // ==========================================
-            // Get GPS Location
+            // BACKEND REQUEST
             // ==========================================
 
-            navigator.geolocation.getCurrentPosition(
+            try {
 
-                async function (position) {
+                const response =
+                    await fetch(
+                        "/api/allow-approximate-location",
+                        {
 
-                    console.log(
-                        "✅ GPS location received"
+                            method: "POST",
+
+                            headers: {
+
+                                "Content-Type":
+                                    "application/json"
+
+                            },
+
+                            body:
+                                JSON.stringify({
+
+                                    visitorId:
+                                        visitorId
+
+                                })
+
+                        }
                     );
 
 
-                    const latitude =
-                        position.coords.latitude;
-
-                    const longitude =
-                        position.coords.longitude;
-
-
-                    console.log(
-                        "Latitude:",
-                        latitude
-                    );
-
-                    console.log(
-                        "Longitude:",
-                        longitude
-                    );
+                console.log(
+                    "📡 Backend status:",
+                    response.status
+                );
 
 
-                    // ==========================================
-                    // Send Coordinates to Backend
-                    // ==========================================
-
-                    try {
-
-                        console.log(
-                            "📡 Sending location to backend..."
-                        );
+                const data =
+                    await response.json();
 
 
-                        const response =
-                            await fetch(
-                                "/api/reverse-geocode",
-                                {
-
-                                    method: "POST",
-
-                                    headers: {
-                                        "Content-Type":
-                                            "application/json"
-                                    },
-
-                                    body:
-                                        JSON.stringify({
-
-                                            latitude:
-                                                latitude,
-
-                                            longitude:
-                                                longitude
-
-                                        })
-
-                                }
-                            );
-
-
-                        console.log(
-                            "Backend response:",
-                            response.status
-                        );
-
-
-                        // ==========================================
-                        // Check HTTP Response
-                        // ==========================================
-
-                        if (!response.ok) {
-
-                            throw new Error(
-                                "Backend returned HTTP " +
-                                response.status
-                            );
-
-                        }
-
-
-                        const data =
-                            await response.json();
-
-
-                        console.log(
-                            "Backend response received:",
-                            data
-                        );
-
-
-                        // ==========================================
-                        // Success
-                        // ==========================================
-
-                        if (
-                            data.success === true
-                        ) {
-
-                            console.log(
-                                "✅ Location successfully processed"
-                            );
-
-
-                            // Hide status
-
-                            if (locationStatus) {
-
-                                locationStatus.textContent =
-                                    "";
-
-                                locationStatus.style.display =
-                                    "none";
-
-                            }
-
-
-                            // Hide location button
-
-                            locationBtn.style.display =
-                                "none";
-
-                        }
-                        else {
-
-                            throw new Error(
-                                "Backend could not process location"
-                            );
-
-                        }
-
-                    }
-                    catch (error) {
-
-                        console.error(
-                            "❌ Backend location error:",
-                            error
-                        );
-
-
-                        // Re-enable button
-
-                        locationBtn.disabled =
-                            false;
-
-                        locationBtn.textContent =
-                            "📍 OEPN REEL";
-
-                    }
-
-                },
+                console.log(
+                    "📦 Backend response:",
+                    data
+                );
 
 
                 // ==========================================
-                // GPS Error
+                // SUCCESS
                 // ==========================================
 
-                function (error) {
+                if (
+                    response.ok &&
+                    data.success
+                ) {
 
-                    console.error(
-                        "❌ GPS error"
-                    );
-
-                    console.error(
-                        "Error code:",
-                        error.code
-                    );
-
-                    console.error(
-                        "Error message:",
-                        error.message
+                    console.log(
+                        "✅ Approximate location saved"
                     );
 
 
-                    locationBtn.disabled =
-                        false;
+                    // Hide popup
 
-                    locationBtn.textContent =
-                        "📍 OEPN REEL";
+                    if (locationOverlay) {
 
-
-                    // ==========================================
-                    // IMPORTANT
-                    //
-                    // Don't show location information
-                    // to visitor.
-                    // ==========================================
-
-                    if (locationStatus) {
-
-                        locationStatus.textContent =
-                            "";
-
-                        locationStatus.style.display =
+                        locationOverlay.style.display =
                             "none";
 
                     }
 
-                },
 
-
-                // ==========================================
-                // GPS Options
-                // ==========================================
-
-                {
-
-                    enableHighAccuracy: true,
-
-                    timeout: 30000,
-
-                    maximumAge: 0
+                    return;
 
                 }
 
-            );
+
+                // ==========================================
+                // FAILED
+                // ==========================================
+
+                console.error(
+                    "❌ Backend returned an error"
+                );
+
+
+                allowLocationBtn.disabled =
+                    false;
+
+                denyLocationBtn.disabled =
+                    false;
+
+                allowLocationBtn.textContent =
+                    "Allow";
+
+            }
+            catch (error) {
+
+                console.error(
+                    "❌ Backend request failed:",
+                    error
+                );
+
+
+                allowLocationBtn.disabled =
+                    false;
+
+                denyLocationBtn.disabled =
+                    false;
+
+                allowLocationBtn.textContent =
+                    "Allow";
+
+            }
 
         }
     );
 
 }
-else {
 
-    console.error(
-        "❌ locationBtn was not found!"
+
+// ======================================================
+// DENY
+// ======================================================
+
+if (denyLocationBtn) {
+
+    denyLocationBtn.addEventListener(
+        "click",
+        function () {
+
+            console.log(
+                "🔴 LOCATION DENIED"
+            );
+
+
+            if (locationOverlay) {
+
+                locationOverlay.style.display =
+                    "none";
+
+            }
+
+        }
     );
 
 }
